@@ -10,16 +10,16 @@ A telescope observes this band split into several frequency channels. Without co
 
 ## Project files
 
-- [`main.c`](main.c) — generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
+- [`generate.c`](generate.c) — generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
 
 ## Build
 
 ```bash
-gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o main main.c
-./main
+gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o generate generate.c
+./generate
 ```
 
-## Physical parameters (constants in `main.c`)
+## Physical parameters (constants in `generate.c`)
 
 | Constant | Role | Current value |
 |---|---|---|
