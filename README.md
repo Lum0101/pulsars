@@ -63,6 +63,7 @@ channel,amplitude
 ## Visualization
 
 The CSVs can be plotted in Python to observe the dispersion curve:
+
 `plot_generated.py` :
 ```python
 import pandas as pd
