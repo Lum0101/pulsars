@@ -19,8 +19,11 @@
 
 int main(void){
 	float **signal = malloc(N_CHANNEL * sizeof(float*));		//Dynamic array of N_CHANNEL pointer, pointing to N_CHANNEL arrays
+	float *decays  = malloc(N_CHANNEL * sizeof(float));		//Dynamic array to store the channel's decays 
 	if (!signal) return 1;						//In case the array wasn't created
-	
+	if (!decays) return 1;
+
+
 	//Create the N_CHANNEL arrays
 	for (int i=0; i<N_CHANNEL; i++){
 		signal[i] = malloc(N * sizeof(float));			//Assigning the pointer returned by malloc to the array
@@ -31,6 +34,7 @@ int main(void){
 		//Frequency of the channel
 		float f_c = F_MIN + i*(F_MAX-F_MIN)/(N_CHANNEL-1);			//Linear repartition of the frequency span
 		float delta_t = K_DM * DM * (1.0f/(f_c*f_c) - 1.0f/(F_REF*F_REF));	//Signal decay in regard to frequency
+		decays[i] = delta_t;							//Store the decay in decays array					
 		int decay_index = (int)(delta_t / DT);   				//Signal to index decay
 		for (int c=0; c<N; c++){
 			//Gaussian impule f(x)=exp(-((x-center_pos)/width)^2)
@@ -42,18 +46,27 @@ int main(void){
 
 	//Data writing
 	FILE *f = fopen("signal.csv", "w");
-	fprintf(f, "canal,i,amplitude\n");   // en-tête
+	fprintf(f, "channel,i,amplitude\n");
 	for (int c = 0; c < N_CHANNEL; c++) {
     		for (int i = 0; i < N; i++) {
         		fprintf(f, "%d,%d,%f\n", c, i, signal[c][i]);
     		}	
 	}
 	fclose(f);						//Close file comunication
+								
+	FILE *decays_file = fopen("decays.csv", "w");
+	fprintf(decays_file, "channel,decay\n");
+	for (int i=0; i< N_CHANNEL; i++){
+		fprintf(decays_file, "%d,%f\n", i, decays[i]);
+	}
+	fclose(decays_file);
 	
 	//Freeing
 	for (int i=0; i<N_CHANNEL; i++){
 		free(signal[i]);					//Free every sub-array memory space
 	}
-	free(signal);						//Free parent array memory space
+	free(signal);							//Free parent array memory space
+	free(decays);
+	
 	return 0;
 }
