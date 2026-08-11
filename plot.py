@@ -1,11 +1,17 @@
+import pandas as pd
 import matplotlib.pyplot as plt
-import csv
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
-x, y = [], []
-with open("signal.csv") as f:
-    for row in csv.reader(f):
-        x.append(int(row[0]))
-        y.append(float(row[1]))
+df = pd.read_csv("signal.csv")
 
-plt.plot(x, y)
+# Reconstruire une grille 2D (canal x i) à partir du format long
+pivot = df.pivot(index="canal", columns="i", values="amplitude")
+
+plt.imshow(pivot.values, aspect="auto", origin="lower", cmap="viridis",
+           extent=[pivot.columns.min(), pivot.columns.max(), pivot.index.min(), pivot.index.max()]
+)
+plt.xlabel("i (temps)")
+plt.ylabel("canal")
+plt.colorbar(label="amplitude")
 plt.show()
