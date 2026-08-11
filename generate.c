@@ -7,7 +7,7 @@
 #define N 2000		//Number of computed samples
 #define PULSE_POS (N/2)	//Pic position
 #define PULSE_WIDTH 5	//Pic width
-#define N_CHANNEL 64	//32 channels
+#define N_CHANNEL 64	//Nuber of channels
 #define F_MIN 1200	//Min frequency mesured (MHz)
 #define F_MAX 1500	//Max frequency mesured (MHz)
 #define F_REF F_MAX

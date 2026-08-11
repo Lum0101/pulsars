@@ -5,7 +5,7 @@
 
 #define DT 1e-4f	//Division temporelle -> 1 pas = 1e-6s
 #define N 2000		//Number of computed samples
-#define N_CHANNEL 64	//32 channels
+#define N_CHANNEL 64	//Number of channels
 #define F_MIN 1200	//Min frequency mesured (MHz)
 #define F_MAX 1500	//Max frequency mesured (MHz)
 #define K_DM 4148.8f	//MHz^2pc^{-1}cm^3s -- Physical constant
@@ -25,8 +25,6 @@ int main(void){
 	float *dedispersed = malloc(N * sizeof(float));
 	
 	
-
-
 	//Read signal data
 	FILE *data_file = fopen("signal.csv", "r");
 	if (!data_file) return 1; 
@@ -64,7 +62,7 @@ int main(void){
 	for (int i=0; i<N; i++){
 		float sum_i = 0.0;
 		for (int c=0; c<N_CHANNEL; c++){
-			int idx = i + decays[c];
+			int idx = i - (int)(decays[c]/DT);
 			if (idx >=0 && idx < N){
 				sum_i += signal[c][idx];
 			}

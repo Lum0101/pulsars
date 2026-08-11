@@ -10,27 +10,33 @@ A telescope observes this band split into several frequency channels. Without co
 
 ## Project files
 
-- [`generate.c`](generate.c) — generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
+- [`generate.c`](generate.c) - generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
+
+- [`dedispersion.c`](dedispersion.c) - de-disperse the previously generated signal : summing for every instant, the amplitude of every channel, taking into acount the decay (prevously computed in [`generate.c`](generate.c) and stored into [`decays.csv`](decays.csv)). Writes the result to `dedispered.csv`
+
+- [`plot_generated.py`](plot_generated.py) - to visualise the generated signal. Plots the amplitude for each channel with respect to instants.
+
+- [`plot_dedispersed.py`](plot_dedispersed.py) - to visualise the dedispersed signal. Plots the amplitude with respect to instants.
 
 ## Build
 
 ```bash
-gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o generate generate.c
-./generate
+gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o file file.c
+./file
 ```
 
-## Physical parameters (constants in `generate.c`)
+## Physical parameters (constants in `generate.c` and `dedispersion.c`)
 
 | Constant | Role | Current value |
 |---|---|---|
-| `DT` | Time resolution: real duration represented by one sample | to be set (precision / array-size trade-off, see below) |
-| `N` | Number of time samples per channel | to be set together with `DT` to cover the max dispersion delay |
-| `N_CHANNEL` | Number of frequency channels | 32 |
+| `DT` | Time resolution: real duration represented by one sample | to be set (precision / array-size trade-off, see below) | 10<sup>-4</sup> |
+| `N` | Number of time samples per channel | to be set together with `DT` to cover the max dispersion delay | 2000 |
+| `N_CHANNEL` | Number of frequency channels | 64 |
 | `F_MIN`, `F_MAX` | Observed frequency band (MHz) | 1200 – 1500 |
 | `F_REF` | Reference frequency (zero delay) | `F_MAX` |
 | `DM` | Pulsar's dispersion measure (pc/cm³) | 56.8 (Crab pulsar, [ATNF catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/)) |
 | `K_DM` | Physical dispersion constant (MHz² pc⁻¹ cm³ s) | 4148.8 |
-| `PULSE_POS` | Pulse position (index) for the reference channel | to be set based on the expected max delay |
+| `PULSE_POS` | Pulse position (index) for the reference channel | to be set based on the expected max delay | N/2 |
 | `PULSE_WIDTH` | Gaussian pulse width (in samples) | 5 |
 
 **`DT` / `N` trade-off**: `DT` must be small enough to properly resolve `PULSE_WIDTH` (the signal's time detail), but the total observable duration (`N × DT`) must exceed the maximum dispersion delay (`delta_t` between the lowest channel and `F_REF`), otherwise the peak falls outside the array for the most delayed channels.
@@ -39,22 +45,31 @@ gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o genera
 
 Long format, one row per data point:
 ```
-canal,i,amplitude
+channel,i,amplitude
 0,0,0.000000
 0,1,0.000012
 ...
 ```
 
+## Output format (`dedispersed.csv`)
+
+```
+channel,amplitude
+0,0.019300
+1,0.039726
+...
+```
+
 ## Visualization
 
-The CSV can be plotted in Python (2D or 3D waterfall) to observe the dispersion curve:
-
+The CSVs can be plotted in Python to observe the dispersion curve:
+`plot_generated.py` :
 ```python
 import pandas as pd
 import matplotlib.pyplot as plt
 
 df = pd.read_csv("signal.csv")
-pivot = df.pivot(index="canal", columns="i", values="amplitude")
+pivot = df.pivot(index="channel", columns="i", values="amplitude")
 
 plt.imshow(pivot.values, aspect="auto", origin="lower", cmap="viridis", interpolation="nearest")
 plt.xlabel("i (time)")
@@ -62,13 +77,27 @@ plt.ylabel("channel")
 plt.colorbar(label="amplitude")
 plt.show()
 ```
+`plot_dedispersed.py` :
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("dedispersed.csv")
+
+plt.plot(df["i"], df["amplitude"])
+plt.xlabel("i (tie)")
+plt.ylabel("Ampitude")
+plt.title("Dedispersed signal")
+plt.show()
+```
+
 
 ## Project steps
 
 - [x] Simulate a noisy Gaussian pulse, single channel
 - [x] Extend to multiple channels with per-channel delay following the dispersion law (`1/f²`)
 - [x] CSV export and visualization (2D / 3D waterfall)
-- [ ] Dedispersion: shift each channel back by its delay then sum, to recover a clean 1D time profile
+- [X] Dedispersion: shift each channel back by its delay then sum, to recover a clean 1D time profile
 - [ ] Simulate a periodic pulse train (multiple pulsar rotations)
 - [ ] FFT on the dedispersed profile to recover the pulsar's rotation period
 
