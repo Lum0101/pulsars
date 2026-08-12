@@ -3,22 +3,23 @@
 #include <math.h>
 
 
-#define DT 1e-4f	//Division temporelle -> 1 pas = 1e-6s
-#define N 2000		//Number of computed samples
-#define PULSE_POS (N/2)	//Pic position
+#define DT 1e-3f	//Division temporelle -> 1 pas = 1e-6s
+#define N 4096		//Number of computed samples
+#define FIRST_PULSE_POS 5	//Pic position
 #define PULSE_WIDTH 5	//Pic width
 #define N_CHANNEL 64	//Nuber of channels
-#define F_MIN 1200	//Min frequency mesured (MHz)
+#define F_MIN 1200	//Min frequency mesured (MHz) These frequencies correspond to the L-BAND used in labs !
 #define F_MAX 1500	//Max frequency mesured (MHz)
 #define F_REF F_MAX
 #define K_DM 4148.8f	//MHz^2pc^{-1}cm^3s -- Physical constant
 //DM : constant depending on the pulsar. See ATNF catalog for the constants list.
-//Crabe Pulsar (B0531+21) : DM = 56.8 pc/cm^3
+//Crabe Pulsar (B0531+21) : DM = 56.8 pc/cm^3, period = 33.0914 pm 0.00001 ms
 #define DM 56.8f
-
+#define PERIOD 0.033f 
+#define PERIOD_INDEX (int)(PERIOD/DT)
 
 int main(void){
-	float **signal = malloc(N_CHANNEL * sizeof(float*));		//Dynamic array of N_CHANNEL pointer, pointing to N_CHANNEL arrays
+	float **signal = calloc(N_CHANNEL,  sizeof(float*));		//Dynamic array of N_CHANNEL pointer, pointing to N_CHANNEL arrays
 	float *decays  = malloc(N_CHANNEL * sizeof(float));		//Dynamic array to store the channel's decays 
 	if (!signal) return 1;						//In case the array wasn't created
 	if (!decays) return 1;
@@ -26,23 +27,30 @@ int main(void){
 
 	//Create the N_CHANNEL arrays
 	for (int i=0; i<N_CHANNEL; i++){
-		signal[i] = malloc(N * sizeof(float));			//Assigning the pointer returned by malloc to the array
+		signal[i] = calloc(N, sizeof(float));			//Assigning the pointer returned by malloc to the array
 		if (!signal[i]) return 1;				//In case the array wasn't created
 	}
 
 	for (int i=0; i<N_CHANNEL; i++){
 		//Frequency of the channel
-		float f_c = F_MIN + i*(F_MAX-F_MIN)/(N_CHANNEL-1);			//Linear repartition of the frequency span
+		float f_c = F_MIN + i*(F_MAX-F_MIN)/(N_CHANNEL-1);			        //Linear repartition of the frequency span
 		float delta_t = K_DM * DM * (1.0f/(f_c*f_c) - 1.0f/(F_REF*F_REF));	//Signal decay in regard to frequency
-		decays[i] = delta_t;							//Store the decay in decays array					
-		int decay_index = (int)(delta_t / DT);   				//Signal to index decay
-		for (int c=0; c<N; c++){
-			//Gaussian impule f(x)=exp(-((x-center_pos)/width)^2)
-			float x = (c-PULSE_POS+decay_index)/ (float)PULSE_WIDTH;
-			signal[i][c] = expf(-x*x);
-			signal[i][c] += 0.1f * ((float)rand() / RAND_MAX - 0.5f);		//Add noise
-		}
-	}
+		decays[i] = delta_t;							                    //Store the decay in decays array					
+        int decay_index = (int)(delta_t / DT);   				            //Signal to index decay
+        
+        int max_decay_index = (int)(K_DM * DM * (1.0f/(F_MIN*F_MIN) - 1.0f/(F_REF*F_REF)) / DT);
+
+        for (int p=0; (FIRST_PULSE_POS + max_decay_index +p*PERIOD_INDEX)<N; p++){
+            int pulse_center = FIRST_PULSE_POS + decay_index + p*PERIOD_INDEX;
+            for (int c=0; c<N; c++){
+                float x = (c-pulse_center)/(float)PULSE_WIDTH;
+                signal[i][c] += exp(-x*x);
+            }
+        }
+        for (int c=0; c<N; c++){
+            signal[i][c] += 0.1f * ((float)rand() / RAND_MAX - 0.5f);
+        }
+     }
 
 	//Data writing
 	FILE *f = fopen("signal.csv", "w");

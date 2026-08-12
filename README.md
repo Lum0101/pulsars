@@ -99,7 +99,7 @@ plt.show()
 - [x] Extend to multiple channels with per-channel delay following the dispersion law (`1/f²`)
 - [x] CSV export and visualization (2D / 3D waterfall)
 - [X] Dedispersion: shift each channel back by its delay then sum, to recover a clean 1D time profile
-- [ ] Simulate a periodic pulse train (multiple pulsar rotations)
+- [X] Simulate a periodic pulse train (multiple pulsar rotations)
 - [ ] FFT on the dedispersed profile to recover the pulsar's rotation period
 
 ## References

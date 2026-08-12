@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("signal.csv")
+df = pd.read_csv("signal.csv", dtype={"channel": int, "i": int, "amplitude": float})
 pivot = df.pivot(index="channel", columns="i", values="amplitude")
 
 plt.imshow(pivot.values, aspect="auto", origin="lower", cmap="viridis", interpolation="nearest")

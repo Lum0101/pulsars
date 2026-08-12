@@ -3,8 +3,8 @@
 #include <math.h>
 
 
-#define DT 1e-4f	//Division temporelle -> 1 pas = 1e-6s
-#define N 2000		//Number of computed samples
+#define DT 1e-3f	//Division temporelle -> 1 pas = 1e-6s
+#define N 4096		//Number of computed samples
 #define N_CHANNEL 64	//Number of channels
 #define F_MIN 1200	//Min frequency mesured (MHz)
 #define F_MAX 1500	//Max frequency mesured (MHz)
@@ -14,9 +14,9 @@
 #define DM 56.8f
 
 int main(void){
-	float **signal = malloc(N_CHANNEL * sizeof(float*));
+	float **signal = calloc(N_CHANNEL, sizeof(float*));
 	for (int i = 0; i < N_CHANNEL; i++) {
-    		signal[i] = malloc(N * sizeof(float));
+    		signal[i] = calloc(N, sizeof(float));
     		if (!signal[i]) return 1;
 	}
 
