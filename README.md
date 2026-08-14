@@ -42,8 +42,10 @@ gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o file f
 | `F_REF` | Reference frequency (zero delay) | `F_MAX` |
 | `DM` | Pulsar's dispersion measure (pc/cm³) | 56.8 (Crab pulsar, [ATNF catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/)) |
 | `K_DM` | Physical dispersion constant (MHz² pc⁻¹ cm³ s) | 4148.8 |
-| `PULSE_POS` | Pulse position (index) for the reference channel | to be set based on the expected max delay | N/2 |
+| `FIRST_PULSE_POS` | Pulse position (index) for the reference channel | to be set based on the expected max delay | 5 |
 | `PULSE_WIDTH` | Gaussian pulse width (in samples) | 5 |
+| `PERIOD` | Pulsar's rotation period (s) | 0.033 |
+| `PERIOD_INDEX` | Period expressed in number of time samples (`PERIOD/DT`) | computed |
 
 **`DT` / `N` trade-off**: `DT` must be small enough to properly resolve `PULSE_WIDTH` (the signal's time detail), but the total observable duration (`N × DT`) must exceed the maximum dispersion delay (`delta_t` between the lowest channel and `F_REF`), otherwise the peak falls outside the array for the most delayed channels.
 
