@@ -10,11 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "config.h"
 
-
-#define N 4096
-#define M_PI 3.1415
-#define Nb_k (N/2)                  //Since it will be symetric
+#define Nb_k (N/2)                  //Since it will be symetrical
+#define PI 3.14159265358979323846
 
 
 int main(void){
@@ -33,7 +32,7 @@ int main(void){
 
     int i;
     float amplitude;
-    while (fscanf(f, "%d,%f", &i, &amplitude) == 2 && i<=Nb_k) {
+    while (fscanf(f, "%d,%f", &i, &amplitude) == 2) {
         dedispersed[i] = amplitude;
     }
     fclose(f);
@@ -44,7 +43,7 @@ int main(void){
         float im = 0.0;
 
         for (int n=0; n<N; n++){
-            float angle = -2.0f * M_PI * k * n / N;
+            float angle = -2.0f * PI * k * n / N;
             re += dedispersed[n] * cos(angle);
             im += dedispersed[n] * sin(angle);
         }
@@ -53,10 +52,9 @@ int main(void){
 
     //Write files
     FILE *magnitudes_file = fopen("magnitudes.csv", "w");
-    fprintf(magnitudes_file, "k,magnitudes\n");
-    fprintf(magnitudes_file, "%f,%f\n", freq, magnitudes[k]);
+    fprintf(magnitudes_file, "freq,magnitudes\n");
 	for (int i=0; i< Nb_k; i++){
-        float freq = (float)k/(N*DT)
+        float freq = (float)i/(N*DT);
 		fprintf(magnitudes_file, "%f,%f\n", freq, magnitudes[i]);
 	}
 	fclose(magnitudes_file);

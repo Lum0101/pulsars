@@ -1,22 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "config.h"
 
-
-#define DT 1e-3f	//Division temporelle -> 1 pas = 1e-6s
-#define N 4096		//Number of computed samples
-#define FIRST_PULSE_POS 5	//Pic position
-#define PULSE_WIDTH 5	//Pic width
-#define N_CHANNEL 64	//Nuber of channels
-#define F_MIN 1200	//Min frequency mesured (MHz) These frequencies correspond to the L-BAND used in labs !
-#define F_MAX 1500	//Max frequency mesured (MHz)
-#define F_REF F_MAX
-#define K_DM 4148.8f	//MHz^2pc^{-1}cm^3s -- Physical constant
-//DM : constant depending on the pulsar. See ATNF catalog for the constants list.
-//Crabe Pulsar (B0531+21) : DM = 56.8 pc/cm^3, period = 33.0914 pm 0.00001 ms
-#define DM 56.8f
-#define PERIOD 0.033f 
-#define PERIOD_INDEX (int)(PERIOD/DT)
 
 int main(void){
 	float **signal = calloc(N_CHANNEL,  sizeof(float*));		//Dynamic array of N_CHANNEL pointer, pointing to N_CHANNEL arrays

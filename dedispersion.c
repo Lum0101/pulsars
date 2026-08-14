@@ -1,17 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-
-#define DT 1e-3f	//Division temporelle -> 1 pas = 1e-6s
-#define N 4096		//Number of computed samples
-#define N_CHANNEL 64	//Number of channels
-#define F_MIN 1200	//Min frequency mesured (MHz)
-#define F_MAX 1500	//Max frequency mesured (MHz)
-#define K_DM 4148.8f	//MHz^2pc^{-1}cm^3s -- Physical constant
-//DM : constant depending on the pulsar. See ATNF catalog for the constants list.
-//Crabe Pulsar (B0531+21) : DM = 56.8 pc/cm^3
-#define DM 56.8f
+#include "config.h"
 
 int main(void){
 	float **signal = calloc(N_CHANNEL, sizeof(float*));

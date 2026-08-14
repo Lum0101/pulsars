@@ -10,13 +10,19 @@ A telescope observes this band split into several frequency channels. Without co
 
 ## Project files
 
-- [`generate.c`](generate.c) - generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
+- [`generate.c`](generate.c) - Generates the simulated signal: a 2D array `signal[channel][i]` containing a Gaussian pulse per channel, shifted in time according to the dispersion law, plus noise. Writes the result to `signal.csv`.
 
-- [`dedispersion.c`](dedispersion.c) - de-disperse the previously generated signal : summing for every instant, the amplitude of every channel, taking into acount the decay (prevously computed in [`generate.c`](generate.c) and stored into [`decays.csv`](decays.csv)). Writes the result to `dedispered.csv`
+- [`dedispersion.c`](dedispersion.c) - De-disperse the previously generated signal : summing for every instant, the amplitude of every channel, taking into acount the decay (prevously computed in [`generate.c`](generate.c) and stored into [`decays.csv`](decays.csv)). Writes the result to `dedispered.csv`
 
-- [`plot_generated.py`](plot_generated.py) - to visualise the generated signal. Plots the amplitude for each channel with respect to instants.
+- [`dft.c`](dft.c) - Computes the Discrete Fourier Transform using a naive/linear approche (O(n))) to find the dominant frequency amongst all.
 
-- [`plot_dedispersed.py`](plot_dedispersed.py) - to visualise the dedispersed signal. Plots the amplitude with respect to instants.
+- [`config.h`](config.h) - Cotains the project's constants.
+
+- [`plot_generated.py`](plot/plot_generated.py) - To visualise the generated signal. Plots the amplitude for each channel with respect to instants.
+
+- [`plot_dedispersed.py`](plot/plot_dedispersed.py) - To visualise the dedispersed signal. Plots the amplitude with respect to instants.
+
+- [`plot_magnitudes.py`](plot/plot_magnitudes.py) - To visualise the fourier spectrum.
 
 ## Build
 
@@ -25,12 +31,12 @@ gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -lm -o file f
 ./file
 ```
 
-## Physical parameters (constants in `generate.c` and `dedispersion.c`)
+## Physical parameters (constants defines in [`config.h`](config.h))
 
 | Constant | Role | Current value |
 |---|---|---|
-| `DT` | Time resolution: real duration represented by one sample | to be set (precision / array-size trade-off, see below) | 10<sup>-4</sup> |
-| `N` | Number of time samples per channel | to be set together with `DT` to cover the max dispersion delay | 2000 |
+| `DT` | Time resolution: real duration represented by one sample | to be set (precision / array-size trade-off, see below) | 10<sup>-3</sup> |
+| `N` | Number of time samples per channel | to be set together with `DT` to cover the max dispersion delay | 4096 |
 | `N_CHANNEL` | Number of frequency channels | 64 |
 | `F_MIN`, `F_MAX` | Observed frequency band (MHz) | 1200 – 1500 |
 | `F_REF` | Reference frequency (zero delay) | `F_MAX` |
