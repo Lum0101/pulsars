@@ -68,6 +68,14 @@ channel,amplitude
 ...
 ```
 
+## Ouput format (`magnitudes.csv`)
+
+```
+freq,magnitudes
+0.000000,69481.578125
+0.244141,922.648926
+```
+
 ## Visualization
 
 The CSVs can be plotted in Python to observe the dispersion curve:
@@ -108,7 +116,7 @@ plt.show()
 - [x] CSV export and visualization (2D / 3D waterfall)
 - [X] Dedispersion: shift each channel back by its delay then sum, to recover a clean 1D time profile
 - [X] Simulate a periodic pulse train (multiple pulsar rotations)
-- [ ] FFT on the dedispersed profile to recover the pulsar's rotation period
+- [X] DFT on the dedispersed profile to recover the pulsar's rotation period
 
 ## References
 
