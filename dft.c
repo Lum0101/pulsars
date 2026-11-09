@@ -1,67 +1,73 @@
 //---------------------------------------------------------------------------//
 //                                                                           //
-//  Provides a Discreate Fourier Transform implementation. This code uses    //
-//  the linear/naive implementation in O(n) however a quasilinear            //
-//  O(nlog(n)) exists : the FFT (Fas Fourier Transform).                     //
+//  Provides a Discrete Fourier Transform implementation. This code uses     //
+//  the naive implementation in O(n²), however a quasilinear O(n log(n))     //
+//  algorithm exists: the FFT (Fast Fourier Transform).                      //
 //                                                                           //
 //---------------------------------------------------------------------------//
-
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "config.h"
 
-#define Nb_k (N/2)                  //Since it will be symetrical
-#define PI 3.14159265358979323846
+#define Nb_k (N / 2)                // Only half the spectrum: it is symmetrical for a real signal
+#define PI   3.14159265358979323846
 
+int main(void)
+{
+    int ret = 1;
+    FILE *f = NULL;
+    FILE *magnitudes_file = NULL;
 
-int main(void){
-    //Variables
-    float *dedispersed = malloc(N*sizeof(float));
-    float *magnitudes  = malloc(Nb_k*sizeof(float)); 
-    if (!dedispersed) return 1;
-    if (!magnitudes) return 1;
+    float *dedispersed = calloc(N, sizeof(float));
+    float *magnitudes  = calloc(Nb_k, sizeof(float));
+    if (!dedispersed || !magnitudes) goto cleanup;
 
-    //Read data
-    FILE *f = fopen("dedispersed.csv", "r");
-    if (!f) return 1;
+    // Read the data
+    f = fopen("dedispersed.csv", "r");
+    if (!f) goto cleanup;
 
     char header[100];
-    fgets(header, sizeof(header), f);                   //ignore the header
+    if (!fgets(header, sizeof(header), f)) goto cleanup;    // Skip the header
 
     int i;
     float amplitude;
     while (fscanf(f, "%d,%f", &i, &amplitude) == 2) {
-        dedispersed[i] = amplitude;
+        if (i >= 0 && i < N) dedispersed[i] = amplitude;    // Guard against out-of-range indices
     }
     fclose(f);
-    
-    //Compute Re(X[k]) and Im(Im[k])
-    for (int k=0; k<Nb_k; k++){
-        float re = 0.0;
-        float im = 0.0;
+    f = NULL;
 
-        for (int n=0; n<N; n++){
-            float angle = -2.0f * PI * k * n / N;
+    // Compute |X[k]| from Re(X[k]) and Im(X[k])
+    for (int k = 0; k < Nb_k; k++) {
+        float re = 0.0f;
+        float im = 0.0f;
+
+        for (int n = 0; n < N; n++) {
+            double angle = -2.0 * PI * k * n / N;
             re += dedispersed[n] * cos(angle);
             im += dedispersed[n] * sin(angle);
         }
-        magnitudes[k] = sqrtf(re*re + im*im);
+        magnitudes[k] = sqrtf(re * re + im * im);
     }
 
-    //Write files
-    FILE *magnitudes_file = fopen("magnitudes.csv", "w");
+    // Write the spectrum
+    magnitudes_file = fopen("magnitudes.csv", "w");
+    if (!magnitudes_file) goto cleanup;
+
     fprintf(magnitudes_file, "freq,magnitudes\n");
-	for (int i=0; i< Nb_k; i++){
-        float freq = (float)i/(N*DT);
-		fprintf(magnitudes_file, "%f,%f\n", freq, magnitudes[i]);
-	}
-	fclose(magnitudes_file);
-    
-    //Free spaces taken by malloc
-    free(dedispersed);
+    for (int k = 0; k < Nb_k; k++) {
+        float freq = (float)k / (N * DT);
+        fprintf(magnitudes_file, "%f,%f\n", freq, magnitudes[k]);
+    }
+
+    ret = 0;
+
+cleanup:
+    if (f) fclose(f);
+    if (magnitudes_file) fclose(magnitudes_file);
+    free(dedispersed);              // free(NULL) is safe
     free(magnitudes);
-    
-    return 0;
+    return ret;
 }

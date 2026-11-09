@@ -3,82 +3,81 @@
 #include <math.h>
 #include "config.h"
 
-int main(void){
-	float **signal = calloc(N_CHANNEL, sizeof(float*));
-	for (int i = 0; i < N_CHANNEL; i++) {
-    		signal[i] = calloc(N, sizeof(float));
-    		if (!signal[i]) return 1;
-	}
+int main(void)
+{
+    int ret = 1;
+    FILE *data_file = NULL;
+    FILE *decays_file = NULL;
+    FILE *dedispersed_file = NULL;
 
-	float *decays = malloc(N_CHANNEL * sizeof(float));
+    float **signal     = calloc(N_CHANNEL, sizeof(float *));
+    float *decays      = calloc(N_CHANNEL, sizeof(float));
+    float *dedispersed = calloc(N, sizeof(float));
+    if (!signal || !decays || !dedispersed) goto cleanup;
 
-	float *dedispersed = malloc(N * sizeof(float));
-	
-	
-	//Read signal data
-	FILE *data_file = fopen("signal.csv", "r");
-	if (!data_file) return 1; 
+    for (int c = 0; c < N_CHANNEL; c++) {
+        signal[c] = calloc(N, sizeof(float));
+        if (!signal[c]) goto cleanup;
+    }
 
-	//To ignore the header
-	char header[100];
-	fgets(header, sizeof(header), data_file);
-	
+    char header[100];
+    int channel, i;
+    float amplitude, decay;
 
-	int channel, i;
-	float amplitude;
+    // Read the signal
+    data_file = fopen("signal.csv", "r");
+    if (!data_file) goto cleanup;
 
-	while (fscanf(data_file, "%d,%d,%f", &channel, &i, &amplitude) == 3) {
-    		signal[channel][i] = amplitude;
-	}
-	fclose(data_file);
+    if (!fgets(header, sizeof(header), data_file)) goto cleanup;    // Skip the header
+    while (fscanf(data_file, "%d,%d,%f", &channel, &i, &amplitude) == 3) {
+        if (channel >= 0 && channel < N_CHANNEL && i >= 0 && i < N)
+            signal[channel][i] = amplitude;
+    }
+    fclose(data_file);
+    data_file = NULL;
 
-	//Read decays data
-	FILE *decays_file = fopen("decays.csv", "r");
-	if (!decays_file) return 1;
+    // Read the decays
+    decays_file = fopen("decays.csv", "r");
+    if (!decays_file) goto cleanup;
 
-	//To ignore the header
-	fgets(header, sizeof(header), decays_file);
+    if (!fgets(header, sizeof(header), decays_file)) goto cleanup;  // Skip the header
+    while (fscanf(decays_file, "%d,%f", &channel, &decay) == 2) {
+        if (channel >= 0 && channel < N_CHANNEL)
+            decays[channel] = decay;
+    }
+    fclose(decays_file);
+    decays_file = NULL;
 
-	float decay;
+    // Dedisperse: sum all channels, each shifted by its own delay
+    for (int t = 0; t < N; t++) {
+        float sum = 0.0f;
+        for (int c = 0; c < N_CHANNEL; c++) {
+            int idx = t - (int)(decays[c] / DT);
+            if (idx >= 0 && idx < N) sum += signal[c][idx];
+        }
+        dedispersed[t] = sum;
+    }
 
-	while (fscanf(decays_file, "%d,%f", &channel, &decay) == 2){
-		decays[channel] = decay;
-	}
-	fclose(decays_file);
+    // Write the result
+    dedispersed_file = fopen("dedispersed.csv", "w");
+    if (!dedispersed_file) goto cleanup;
 
-	
+    fprintf(dedispersed_file, "i,amplitude\n");
+    for (int t = 0; t < N; t++) {
+        fprintf(dedispersed_file, "%d,%f\n", t, dedispersed[t]);
+    }
 
-	//Dedisperse data
-	for (int i=0; i<N; i++){
-		float sum_i = 0.0;
-		for (int c=0; c<N_CHANNEL; c++){
-			int idx = i - (int)(decays[c]/DT);
-			if (idx >=0 && idx < N){
-				sum_i += signal[c][idx];
-			}
-		}
-		dedispersed[i] = sum_i;
-	}
+    ret = 0;
 
-
-	//Write data
-	FILE *dedispersed_file = fopen("dedispersed.csv", "w");
-	if (!dedispersed_file) return 0;
-	fprintf(dedispersed_file, "i,amplitude\n");
-	for (int i=0; i<N; i++){
-		fprintf(dedispersed_file, "%d,%f\n", i, dedispersed[i]);
-	}
-	fclose(dedispersed_file);
-
-	
-		
-	//Free memory
-	for (int i=0; i<N_CHANNEL; i++){
-		free(signal[i]);
-	}
-	free(signal);
-	free(decays);
-	free(dedispersed);
-
-	return 0;
+cleanup:
+    if (data_file) fclose(data_file);
+    if (decays_file) fclose(decays_file);
+    if (dedispersed_file) fclose(dedispersed_file);
+    if (signal) {
+        for (int c = 0; c < N_CHANNEL; c++) free(signal[c]);        // free(NULL) is safe
+        free(signal);
+    }
+    free(decays);
+    free(dedispersed);
+    return ret;
 }
