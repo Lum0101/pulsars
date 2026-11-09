@@ -6,7 +6,7 @@ A C project simulating a pulsar's radio emission as it would be captured by a mu
 
 A pulsar emits short, periodic radio pulses across a wide range of frequencies simultaneously (broadband emission). As the signal travels through the interstellar medium (ionized gas), it gets delayed differently depending on frequency: lower frequencies arrive later than higher ones, following a $1/f^2$ law. This is **dispersion**:
 
-$$\Delta t(f) = K_{\mathrm{DM}} \, \mathrm{DM} \left( \frac{1}{f^2} - \frac{1}{f_{\mathrm{ref}}^2} \right)$$
+$$\Delta t(f) = K_{\mathrm{DM}}  \mathrm{DM} \left( \frac{1}{f^2} - \frac{1}{f_{\mathrm{ref}}^2} \right)$$
 
 with $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\,pc^{-1}\,cm^3\,s}$, $\mathrm{DM}$ in $\mathrm{pc\,cm^{-3}}$ and $f$ in MHz.
 
