@@ -24,5 +24,6 @@
 #define DM              56.8f                       // Dispersion measure (see above)
 #define PERIOD          0.033f                      // Pulsar period (s)
 #define PERIOD_INDEX    ((int)(PERIOD / DT + 0.5f)) // Period in samples (rounded)
+#define NOISE_AMPLITUDE 0.1f                        // Peak-to-peak amplitude of the background noise
 
 #endif

@@ -7,13 +7,11 @@ int main(void)
 {
     int ret = 1;
     FILE *data_file = NULL;
-    FILE *decays_file = NULL;
     FILE *dedispersed_file = NULL;
 
     float **signal     = calloc(N_CHANNEL, sizeof(float *));
-    float *decays      = calloc(N_CHANNEL, sizeof(float));
     float *dedispersed = calloc(N, sizeof(float));
-    if (!signal || !decays || !dedispersed) goto cleanup;
+    if (!signal || !dedispersed) goto cleanup;
 
     for (int c = 0; c < N_CHANNEL; c++) {
         signal[c] = calloc(N, sizeof(float));
@@ -22,7 +20,7 @@ int main(void)
 
     char header[100];
     int channel, i;
-    float amplitude, decay;
+    float amplitude;
 
     // Read the signal
     data_file = fopen("signal.csv", "r");
@@ -36,23 +34,16 @@ int main(void)
     fclose(data_file);
     data_file = NULL;
 
-    // Read the decays
-    decays_file = fopen("decays.csv", "r");
-    if (!decays_file) goto cleanup;
-
-    if (!fgets(header, sizeof(header), decays_file)) goto cleanup;  // Skip the header
-    while (fscanf(decays_file, "%d,%f", &channel, &decay) == 2) {
-        if (channel >= 0 && channel < N_CHANNEL)
-            decays[channel] = decay;
-    }
-    fclose(decays_file);
-    decays_file = NULL;
 
     // Dedisperse: sum all channels, each shifted by its own delay
     for (int t = 0; t < N; t++) {
         float sum = 0.0f;
         for (int c = 0; c < N_CHANNEL; c++) {
-            int idx = t - (int)(decays[c] / DT);
+            // CHannel frequency (linear distribution over the span)
+            float f_c = F_MIN + c * (F_MAX - F_MIN) / (N_CHANNEL - 1);
+            // Dispersion delay relative to the reference frequency (decay)
+            float delta_t_c = K_DM * DM * (1.0f / (f_c * f_c) - 1.0f / (F_REF * F_REF));
+            int idx = t + (int)(delta_t_c / DT);
             if (idx >= 0 && idx < N) sum += signal[c][idx];
         }
         dedispersed[t] = sum;
@@ -71,13 +62,11 @@ int main(void)
 
 cleanup:
     if (data_file) fclose(data_file);
-    if (decays_file) fclose(decays_file);
     if (dedispersed_file) fclose(dedispersed_file);
     if (signal) {
         for (int c = 0; c < N_CHANNEL; c++) free(signal[c]);        // free(NULL) is safe
         free(signal);
     }
-    free(decays);
     free(dedispersed);
     return ret;
 }

@@ -38,6 +38,13 @@ int main(void)
     }
     fclose(f);
     f = NULL;
+    
+    // Compute the average of the signal
+    float mean = 0;
+    for (int k = 0; k < N; k++){
+        mean += dedispersed[k];
+    }
+    mean = mean / N;
 
     // Compute |X[k]| from Re(X[k]) and Im(X[k])
     for (int k = 0; k < Nb_k; k++) {
@@ -46,8 +53,8 @@ int main(void)
 
         for (int n = 0; n < N; n++) {
             double angle = -2.0 * PI * k * n / N;
-            re += dedispersed[n] * cos(angle);
-            im += dedispersed[n] * sin(angle);
+            re += (dedispersed[n] - mean) * cos(angle);
+            im += (dedispersed[n] - mean) * sin(angle);
         }
         magnitudes[k] = sqrtf(re * re + im * im);
     }

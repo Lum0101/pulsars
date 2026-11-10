@@ -7,7 +7,6 @@ int main(void)
 {
     int ret = 1;
     FILE *f = NULL;
-    FILE *decays_file = NULL;
 
     float **signal = calloc(N_CHANNEL, sizeof(float *));   // N_CHANNEL pointers, one per channel
     float *decays  = calloc(N_CHANNEL, sizeof(float));     // Delay of each channel
@@ -43,7 +42,7 @@ int main(void)
 
         // Uniform noise in [-0.05, 0.05]
         for (int c = 0; c < N; c++) {
-            signal[i][c] += 0.1f * ((float)rand() / RAND_MAX - 0.5f);
+            signal[i][c] += NOISE_AMPLITUDE * ((float)rand() / RAND_MAX - 0.5f);
         }
     }
 
@@ -57,19 +56,11 @@ int main(void)
         }
     }
 
-    // Write the delays
-    decays_file = fopen("decays.csv", "w");
-    if (!decays_file) goto cleanup;
-    fprintf(decays_file, "channel,decay\n");
-    for (int i = 0; i < N_CHANNEL; i++) {
-        fprintf(decays_file, "%d,%f\n", i, decays[i]);
-    }
 
     ret = 0;
 
 cleanup:
     if (f) fclose(f);
-    if (decays_file) fclose(decays_file);
     if (signal) {
         for (int i = 0; i < N_CHANNEL; i++) free(signal[i]);   // free(NULL) is safe
         free(signal);

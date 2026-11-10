@@ -11,7 +11,10 @@ df = pd.read_csv("magnitudes.csv")
 fig, ax = plt.subplots(figsize=(10, 4))
 
 # Magnitude as a function of frequency
-ax.plot(df["freq"], df["magnitudes"], linewidth=0.8)
+ax.plot(df["freq"].iloc[1:], df["magnitudes"].iloc[1:], linewidth=0.8)
+
+# Set axis with log scale
+ax.set_yscale("log")
 
 # Labels and title
 ax.set_xlabel("Frequency (Hz)")
@@ -19,7 +22,7 @@ ax.set_ylabel("Magnitude")
 ax.set_title("DFT spectrum")
 
 # Light grid to read the harmonics more easily
-ax.grid(alpha=0.3)
+ax.grid(True, which="both", alpha=0.3)
 
 fig.tight_layout()   # Avoid clipped labels
 
