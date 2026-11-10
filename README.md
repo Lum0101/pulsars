@@ -8,7 +8,7 @@ A pulsar emits short, periodic radio pulses across a wide range of frequencies s
 
 $$\Delta t(f) = K_{\mathrm{DM}}  \mathrm{DM} \left( \frac{1}{f^2} - \frac{1}{f_{\mathrm{ref}}^2} \right)$$
 
-with $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\,pc^{-1}\,cm^3\,s}$, $\mathrm{DM}$ in $\mathrm{pc\,cm^{-3}}$ and $f$ in MHz.
+with $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\ pc^{-1}cm^3\ s}$, $\mathrm{DM}$ in $\mathrm{pc\ cm^{-3}}$ and $f$ in MHz.
 
 A telescope observes this band split into several frequency channels. Without correction, the pulse appears smeared out in time across all channels (a parabolic "sweep"), buried in noise on each individual channel. **Dedispersion** consists of shifting each channel back by its expected delay (computed from the pulsar's dispersion measure, DM) and then summing them, making a sharp peak reappear.
 
@@ -55,7 +55,7 @@ gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -o file file.
 
 **`DT` / `N` trade-off**: `DT` must be small enough to properly resolve `PULSE_WIDTH` (the signal's time detail), but the total observable duration (`N × DT`) must exceed the maximum dispersion delay (`delta_t` between the lowest channel and `F_REF`), otherwise the peak falls outside the array for the most delayed channels. With the values above, `N × DT` ≈ 4.1 s, far above the maximum delay (≈ 59 ms).
 
-The same choice sets the frequency resolution of the DFT: $\Delta f = 1/(N \, \mathrm{DT}) \approx 0.244$ Hz.
+The same choice sets the frequency resolution of the DFT: $\Delta f = 1/(N \ \mathrm{DT}) \approx 0.244$ Hz.
 
 ## Output format (`signal.csv`)
 
