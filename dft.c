@@ -11,7 +11,7 @@
 #include <math.h>
 #include "config.h"
 
-#define Nb_k (N / 2)                // Only half the spectrum: it is symmetrical for a real signal
+#define Nb_k (N_UTIL / 2)                // Only half the spectrum: it is symmetrical for a real signal
 #define PI   3.14159265358979323846
 
 int main(void)
@@ -20,7 +20,7 @@ int main(void)
     FILE *f = NULL;
     FILE *magnitudes_file = NULL;
 
-    float *dedispersed = calloc(N, sizeof(float));
+    float *dedispersed = calloc(N_UTIL, sizeof(float));
     float *magnitudes  = calloc(Nb_k, sizeof(float));
     if (!dedispersed || !magnitudes) goto cleanup;
 
@@ -34,30 +34,33 @@ int main(void)
     int i;
     float amplitude;
     while (fscanf(f, "%d,%f", &i, &amplitude) == 2) {
-        if (i >= 0 && i < N) dedispersed[i] = amplitude;    // Guard against out-of-range indices
+        if (i >= 0 && i < N_UTIL) dedispersed[i] = amplitude;    // Guard against out-of-range indices
     }
     fclose(f);
     f = NULL;
     
     // Compute the average of the signal
     float mean = 0;
-    for (int k = 0; k < N; k++){
+    for (int k = 0; k < N_UTIL; k++){
         mean += dedispersed[k];
     }
     mean = mean / N;
 
-    // Compute |X[k]| from Re(X[k]) and Im(X[k])
+    // Compute |X[k]| from Re(X[k]) and Im(X[k]) Also applies a Hann window
     for (int k = 0; k < Nb_k; k++) {
         float re = 0.0f;
         float im = 0.0f;
 
-        for (int n = 0; n < N; n++) {
+        for (int n = 0; n < N_UTIL; n++) {
+            float w = 0.5f * (1.0f - cosf(2.0f * (float)PI * n / (N_UTIL-1)));
             double angle = -2.0 * PI * k * n / N;
-            re += (dedispersed[n] - mean) * cos(angle);
-            im += (dedispersed[n] - mean) * sin(angle);
+            float x = (dedispersed[n] - mean) * w;
+            re += x * cos(angle);
+            im += x * sin(angle);
         }
         magnitudes[k] = sqrtf(re * re + im * im);
     }
+
 
     // Write the spectrum
     magnitudes_file = fopen("magnitudes.csv", "w");
@@ -65,7 +68,7 @@ int main(void)
 
     fprintf(magnitudes_file, "freq,magnitudes\n");
     for (int k = 0; k < Nb_k; k++) {
-        float freq = (float)k / (N * DT);
+        float freq = (float)k / (N_UTIL * DT);
         fprintf(magnitudes_file, "%f,%f\n", freq, magnitudes[k]);
     }
 
