@@ -1,182 +1,387 @@
-# Pulsar signal dispersion & dedispersion simulation
+# Pulsar Signal Dispersion & Dedispersion Simulation
 
-A C project simulating a pulsar's radio emission as it would be captured by a multi-channel radio telescope, accounting for **interstellar dispersion**, then implementing the **dedispersion** algorithm to recover the original signal and a **DFT** to recover the pulsar's rotation period.
+A C project simulating the dispersion of a pulsar's radio emission as it travels through the interstellar medium and is observed by a multi-channel radio telescope.
 
-## Physical background
+The project implements:
+- A multi-channel pulsar signal generator with interstellar dispersion and noise.
+- A dedispersion algorithm to recover the original pulse profile.
+- A Discrete Fourier Transform (DFT) to estimate the pulsar's rotation period.
+- Python visualisation tools to inspect the generated signal, the dedispersed profile and its frequency spectrum.
 
-A pulsar emits short, periodic radio pulses across a wide range of frequencies simultaneously (broadband emission). As the signal travels through the interstellar medium (ionized gas), it gets delayed differently depending on frequency: lower frequencies arrive later than higher ones, following a $1/f^2$ law. This is **dispersion**:
+## 1. Physical background
 
-$$\Delta t(f) = K_{\mathrm{DM}}  \mathrm{DM} \left( \frac{1}{f^2} - \frac{1}{f_{\mathrm{ref}}^2} \right)$$
+A pulsar emits short, periodic radio pulses over a wide range of frequencies simultaneously (broadband emission).
 
-with $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\ pc^{-1}cm^3\ s}$, $\mathrm{DM}$ in $\mathrm{pc\ cm^{-3}}$ and $f$ in MHz.
+As the signal travels through the ionised interstellar medium, lower frequencies are delayed more than higher frequencies. This phenomenon is called **dispersion**.
 
-A telescope observes this band split into several frequency channels. Without correction, the pulse appears smeared out in time across all channels (a parabolic "sweep"), buried in noise on each individual channel. **Dedispersion** consists of shifting each channel back by its expected delay (computed from the pulsar's dispersion measure, DM) and then summing them, making a sharp peak reappear.
+The time delay relative to a reference frequency is:
 
-The largest delay is the one between the lowest and the highest frequency of the band:
+$$
+\Delta t(f) = K_{\mathrm{DM}}\,\mathrm{DM}
+\left(\frac{1}{f^2}-\frac{1}{f_{\mathrm{ref}}^2}\right)
+$$
 
-$$\Delta t_{\max} = K_{\mathrm{DM}}  \mathrm{DM} \left( \frac{1}{f_{\min}^2} - \frac{1}{f_{\max}^2} \right) \approx 59\ \mathrm{ms}$$
+where:
+- $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\,pc^{-1}\,cm^3\,s}$
+- DM is the dispersion measure, in $\mathrm{pc\,cm^{-3}}$
+- $f$ and $f_{\mathrm{ref}}$ are frequencies in MHz.
 
-## Project files
+A radio telescope observes the frequency band through several channels. Without correction, the pulse appears progressively delayed at lower frequencies.
 
-- [`generate.c`](generate.c) - Generates the simulated signal: a 2D array `signal[channel][i]` containing a periodic train of Gaussian pulses per channel, shifted in time according to the dispersion law, plus a uniform random background noise (drawn independently for each sample and each channel, amplitude set by `NOISE_AMPLITUDE`). Writes the signal to `signal.csv`.
+**Dedispersion** consists of shifting each channel back by its expected delay and summing the channels. This restores the original pulse profile.
 
-- [`dedispersion.c`](dedispersion.c) - Dedisperses the previously generated signal: for every time sample, sums the amplitude of all channels after shifting each one back by its delay. The delays are not stored anywhere: they are recomputed on the fly from `DM`, `K_DM` and the channel frequencies (same formula and same integer truncation as in [`generate.c`](generate.c)). A delayed channel is read at index `t + delay`, so the last samples would lack the contribution of the most delayed channels and the amplitude would drop there (edge effect). To avoid it, the output is **truncated to `N_UTIL = N - MAX_DELAY` samples**, the only ones for which every channel has data. Each channel is stored on the full `N` samples; only the dedispersed profile has `N_UTIL` samples. Writes the result to `dedispersed.csv`.
+The maximum delay across the observed frequency band is:
 
-- [`dft.c`](dft.c) - Computes the Discrete Fourier Transform of the dedispersed profile (`N_UTIL` samples) with a naive direct approach ($O(N^2)$) to find the dominant frequency. The mean is subtracted first, then a **Hann window** is applied to reduce spectral leakage. Writes the spectrum to `magnitudes.csv`.
+$$
+\Delta t_{\max} =
+K_{\mathrm{DM}}\,\mathrm{DM}
+\left(\frac{1}{f_{\min}^2}-\frac{1}{f_{\max}^2}\right)
+$$
 
-- [`config.h`](config.h) - Contains the project's constants, including the derived `MAX_DELAY` and `N_UTIL`.
+For the default parameters, this delay is approximately 59 ms.
 
-- [`plot_generated.py`](plot/plot_generated.py) - Visualises the generated signal: amplitude for each channel with respect to time.
+## 2. Project structure
 
-- [`plot_dedispersed.py`](plot/plot_dedispersed.py) - Visualises the dedispersed signal: amplitude with respect to time.
-
-- [`plot_magnitudes.py`](plot/plot_magnitudes.py) - Visualises the Fourier spectrum (log scale on the magnitude axis) and saves it in `result/dft_spectrum.png`.
-
-## Build
-
-```bash
-gcc -Wall -Wextra -Werror -std=c17 -g -fsanitize=address,undefined -o file file.c -lm
-./file
+```text
+pulsars/
+│
+├── config.h
+│
+├── generate.c
+├── dedispersion.c
+├── dft.c
+│
+├── plot/
+│   ├── plot_generated.py
+│   ├── plot_dedispersed.py
+│   └── plot_magnitudes.py
+│
+├── result/
+│
+├── signal.csv
+├── dedispersed.csv
+├── magnitudes.csv
+│
+└── README.md
 ```
 
-(`-lm` goes after the source file so that the linker resolves the math library correctly.)
+### C programs
 
-## Run order
+| File | Description |
+|---|---|
+| `generate.c` | Generates the dispersed multi-channel pulsar signal and writes `signal.csv`. |
+| `dedispersion.c` | Applies dedispersion and writes the recovered signal to `dedispersed.csv`. |
+| `dft.c` | Computes the DFT of the dedispersed signal and writes `magnitudes.csv`. |
+| `config.h` | Defines the physical and numerical parameters shared by all C programs. |
 
-Each step reads the output of the previous one, so run the programs from the same folder, in this order:
+### Python visualisation scripts
 
-1. `generate` → writes `signal.csv`
-2. `dedispersion` → reads `signal.csv`, writes `dedispersed.csv`
-3. `dft` → reads `dedispersed.csv`, writes `magnitudes.csv`
-4. the plots, each one as soon as its CSV exists
+| Script | Description |
+|---|---|
+| `plot/plot_generated.py` | Displays the generated multi-channel signal as a 2D time-frequency image. |
+| `plot/plot_dedispersed.py` | Displays the recovered dedispersed pulse profile as a function of time. |
+| `plot/plot_magnitudes.py` | Displays the Fourier magnitude spectrum on a logarithmic magnitude scale and saves the figure in `result/`. |
 
-All programs share [`config.h`](config.h): recompile all of them after changing a constant, otherwise they may no longer agree (for instance on `N` or `N_UTIL`).
+## 3. Physical and numerical parameters
 
-## Physical parameters (constants defined in [`config.h`](config.h))
+All simulation parameters are defined in `config.h`.
 
-| Constant | Role | Value |
+| Parameter | Description | Default value |
 |---|---|---|
-| `DT` | Time resolution: real duration represented by one sample (s) | $10^{-3}$ |
+| `DT` | Time resolution per sample (s) | $10^{-3}$ |
 | `N` | Number of time samples per channel | 4096 |
 | `N_CHANNEL` | Number of frequency channels | 64 |
-| `F_MIN`, `F_MAX` | Observed frequency band (MHz) | 1200 – 1500 |
-| `F_REF` | Reference frequency (zero delay) | `F_MAX` |
-| `DM` | Pulsar's dispersion measure (pc/cm³) | 56.8 (Crab pulsar, [ATNF catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/)) |
-| `K_DM` | Physical dispersion constant (MHz² pc⁻¹ cm³ s) | 4148.8 |
-| `FIRST_PULSE_POS` | Pulse position (index) for the reference channel | 5 |
-| `PULSE_WIDTH` | Gaussian pulse width (in samples) | 5 |
-| `PERIOD` | Pulsar's rotation period (s) | 0.033 |
-| `PERIOD_INDEX` | Period expressed in number of time samples (`PERIOD/DT`) | computed (33) |
-| `NOISE_AMPLITUDE` | Peak-to-peak amplitude of the uniform background noise added to each sample (pulse amplitude = 1) | 0.1 |
-| `MAX_DELAY` | Maximum dispersion delay across the band, in samples (rounded up) | computed (59) |
-| `N_UTIL` | Number of usable samples after dedispersion (`N - MAX_DELAY`) | computed (4037) |
+| `F_MIN` | Lowest observed frequency (MHz) | 1200 |
+| `F_MAX` | Highest observed frequency (MHz) | 1500 |
+| `F_REF` | Reference frequency (MHz) | `F_MAX` |
+| `DM` | Dispersion measure ($\mathrm{pc\,cm^{-3}}$) | 56.8 |
+| `K_DM` | Dispersion constant | 4148.8 |
+| `FIRST_PULSE_POS` | Reference-channel pulse position (sample index) | 5 |
+| `PULSE_WIDTH` | Gaussian pulse width (samples) | 5 |
+| `PERIOD` | Pulsar rotation period (s) | 0.033 |
+| `PERIOD_INDEX` | Rotation period in samples | Computed (33) |
+| `NOISE_AMPLITUDE` | Peak-to-peak background noise amplitude | 0.1 |
+| `MAX_DELAY` | Maximum dispersion delay (samples) | Computed (59) |
+| `N_UTIL` | Number of usable samples after dedispersion | Computed (4037) |
 
-**`DT` / `N` trade-off**: `DT` must be small enough to properly resolve `PULSE_WIDTH` (the signal's time detail), but the total observable duration (`N × DT`) must exceed the maximum dispersion delay (`delta_t` between the lowest channel and `F_REF`), otherwise the peak falls outside the array for the most delayed channels. With the values above, `N × DT` ≈ 4.1 s, far above the maximum delay (≈ 59 ms). After truncation, the usable duration is `N_UTIL × DT` ≈ 4.04 s.
+The default dispersion measure corresponds approximately to that of the Crab pulsar (B0531+21).
 
-The usable duration sets the frequency resolution of the DFT: $\Delta f = 1/(N_{\mathrm{util}} \ \mathrm{DT}) \approx 0.248$ Hz.
+### Time resolution and observation duration
 
-## Edge effect and spectral leakage
+The time resolution must be sufficiently small to resolve the pulse width.
 
-Two effects can pollute the spectrum, and both are handled:
+The total observation duration is:
 
-- **Edge effect**: in the last `MAX_DELAY` samples, the most delayed channels have no data left, so the dedispersed amplitude collapses. This discontinuity spreads energy over the whole spectrum. The profile is therefore truncated to `N_UTIL` samples, and the DFT must use `N_UTIL` (not `N`) everywhere: array sizes, mean, phase angle and frequency axis. Using `N` would silently zero-pad the series and reintroduce a step at its end.
-- **Spectral leakage**: the series does not contain an integer number of periods ($N_{\mathrm{util}}/P \approx 122.3$), and a rectangular window creates side lobes around each peak. A Hann window, applied **after** subtracting the mean, brings the signal smoothly to zero at both ends:
+$$
+T_{\mathrm{obs}} = N \times DT
+$$
 
-$$w[n] = \frac{1}{2}\left(1 - \cos\frac{2\pi n}{N_{\mathrm{util}} - 1}\right), \qquad x'[n] = \left(x[n] - \bar{x}\right) w[n]$$
+For the default parameters:
 
-The price is a main peak about twice as wide and an amplitude divided by two on average. A small residual peak at 0 Hz remains, because the windowed sum no longer cancels exactly.
+$$
+T_{\mathrm{obs}} \approx 4.096\ \mathrm{s}
+$$
 
-## Results
+This is considerably longer than the maximum dispersion delay of approximately 59 ms.
 
-- The dedispersed pulses reach an amplitude of about 64 = `N_CHANNEL`: all channels add up coherently, each one having an amplitude of 1.
-- The spectrum shows the fundamental at about 30 Hz, i.e. a period of about 33 ms, followed by its harmonics (60, 90, 120 and 150 Hz) above the noise floor.
+After dedispersion, the usable observation duration is:
 
-## Output format (`signal.csv`)
+$$
+T_{\mathrm{util}} = N_{\mathrm{UTIL}} \times DT
+\approx 4.037\ \mathrm{s}
+$$
 
-Long format, one row per data point:
+The corresponding DFT frequency resolution is:
+
+$$
+\Delta f = \frac{1}{N_{\mathrm{UTIL}}DT}
+\approx 0.248\ \mathrm{Hz}
+$$
+
+## 4. Compilation
+
+The project requires a C compiler supporting the C17 standard and the mathematical library.
+
+For example, using GCC:
+
+```bash
+gcc -Wall -Wextra -Werror -std=c17 -g \
+    -fsanitize=address,undefined \
+    -o generate generate.c -lm
+
+gcc -Wall -Wextra -Werror -std=c17 -g \
+    -fsanitize=address,undefined \
+    -o dedispersion dedispersion.c -lm
+
+gcc -Wall -Wextra -Werror -std=c17 -g \
+    -fsanitize=address,undefined \
+    -o dft dft.c -lm
 ```
+
+The `-lm` option links the mathematical library and must appear after the source file.
+
+All three programs include `config.h`.
+
+**Important:** if a parameter is modified in `config.h`, all three programs must be recompiled to ensure that they use consistent values.
+
+## 5. Execution
+
+Run all commands from the project root directory.
+
+The programs must be executed in the following order because each step uses the output of the previous one.
+
+### Step 1: Generate the dispersed signal
+
+```bash
+./generate
+```
+
+This program:
+- Generates a periodic train of Gaussian pulses.
+- Distributes the signal across multiple frequency channels.
+- Applies a frequency-dependent delay according to the dispersion law.
+- Adds independent uniform background noise.
+- Writes the resulting dynamic spectrum to `signal.csv`.
+
+### Step 2: Dedisperse the signal
+
+```bash
+./dedispersion
+```
+
+This program:
+- Reads `signal.csv`.
+- Recomputes the channel delays using the physical parameters.
+- Shifts each channel back to its expected arrival time.
+- Sums the channels to recover the pulse profile.
+- Writes the result to `dedispersed.csv`.
+
+The delays are recomputed directly from `DM`, `K_DM` and the channel frequencies. No intermediate delay file is required.
+
+### Step 3: Compute the Fourier spectrum
+
+```bash
+./dft
+```
+
+This program:
+- Reads `dedispersed.csv`.
+- Removes the mean value of the signal.
+- Applies a Hann window.
+- Computes the Discrete Fourier Transform.
+- Writes the frequency spectrum to `magnitudes.csv`.
+
+### Step 4: Visualise the results
+
+Install the Python dependencies:
+
+```bash
+python -m pip install numpy pandas matplotlib
+```
+
+Run the visualisation scripts from the project root:
+
+```bash
+python plot/plot_generated.py
+python plot/plot_dedispersed.py
+python plot/plot_magnitudes.py
+```
+
+The scripts use the CSV files generated by the C programs.
+
+The Fourier spectrum visualisation saves its figure in:
+
+```text
+result/dft_spectrum.png
+```
+
+## 6. Edge effects and spectral leakage
+
+Two numerical effects must be considered when computing the Fourier spectrum.
+
+### Edge effects
+
+During dedispersion, each channel is shifted by its corresponding delay.
+
+For a time sample $t$, the algorithm reads the original channel at index:
+
+$$
+t + \mathrm{delay}
+$$
+
+Consequently, the last samples of the original observation do not contain valid contributions from every channel.
+
+Keeping these samples would introduce an artificial decrease in amplitude at the end of the dedispersed profile.
+
+To avoid this problem, the output is truncated to:
+
+$$
+N_{\mathrm{UTIL}} = N - \mathrm{MAX\_DELAY}
+$$
+
+Only samples for which all channels contain valid data are retained.
+
+The DFT must therefore consistently use `N_UTIL` for:
+- The input signal length.
+- The mean calculation.
+- The phase calculation.
+- The frequency axis.
+
+Using `N` instead would introduce an artificial discontinuity in the signal.
+
+### Spectral leakage
+
+The observation does not contain an integer number of pulsar rotations:
+
+$$
+\frac{N_{\mathrm{UTIL}}}{P_{\mathrm{index}}}
+\approx 122.3
+$$
+
+A rectangular observation window would therefore produce spectral leakage, spreading energy into neighbouring frequency bins.
+
+To reduce this effect, a Hann window is applied after subtracting the mean:
+
+$$
+w[n] =
+\frac{1}{2}
+\left(1-\cos\left(\frac{2\pi n}{N_{\mathrm{UTIL}}-1}\right)\right)
+$$
+
+The windowed signal is:
+
+$$
+x'[n] = (x[n]-\bar{x})w[n]
+$$
+
+This reduces spectral leakage but also broadens the main spectral peak and reduces its amplitude.
+
+A small residual component at 0 Hz may remain because the windowed signal does not necessarily sum to exactly zero.
+
+## 7. Output files
+
+### `signal.csv`
+
+Contains the generated multi-channel signal in long format, with one row per channel and time sample.
+
+```csv
 channel,i,amplitude
 0,0,0.000000
 0,1,0.000012
 ...
 ```
 
-## Output format (`dedispersed.csv`)
+### `dedispersed.csv`
 
-One row per usable time sample (`N_UTIL` rows), summed over all channels:
-```
+Contains the dedispersed signal, with one row per usable time sample.
+
+```csv
 i,amplitude
 0,0.019300
 1,0.039726
 ...
 ```
 
-## Output format (`magnitudes.csv`)
+The file contains `N_UTIL` samples.
 
-One row per frequency bin, from 0 up to half the sampling frequency (`N_UTIL / 2` rows):
-```
+### `magnitudes.csv`
+
+Contains the Fourier magnitude spectrum.
+
+```csv
 freq,magnitudes
 0.000000,...
 0.247708,...
 ...
 ```
 
-## Visualization
+The frequency values are expressed in Hz.
 
-The CSVs can be plotted in Python to observe the dispersion curve:
+## 8. Expected results
 
-`plot_generated.py`:
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
+The simulation should produce the following results:
 
-df = pd.read_csv("signal.csv")
-pivot = df.pivot(index="channel", columns="i", values="amplitude")
+- **Dispersed signal:** the pulses appear progressively delayed at lower frequencies, producing a characteristic dispersion sweep.
+- **Dedispersed signal:** the individual channel contributions add coherently, producing a much sharper pulse profile.
+- **Amplitude:** the dedispersed pulse can reach an amplitude close to `N_CHANNEL` (64), since each channel contributes a pulse with an amplitude of 1.
+- **Fourier spectrum:** the fundamental frequency should appear around 30 Hz, corresponding to a pulsar rotation period of approximately 33 ms.
+- **Harmonics:** additional peaks should appear around 60, 90, 120 and 150 Hz.
 
-plt.imshow(pivot.values, aspect="auto", origin="lower", cmap="viridis", interpolation="nearest")
-plt.xlabel("i (time)")
-plt.ylabel("channel")
-plt.colorbar(label="amplitude")
-plt.show()
-```
+These values correspond to the default simulation parameters.
 
-`plot_dedispersed.py`:
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
+## 9. Current implementation status
 
-df = pd.read_csv("dedispersed.csv")
+The project currently implements:
 
-plt.plot(df["i"], df["amplitude"])
-plt.xlabel("i (time)")
-plt.ylabel("Amplitude")
-plt.title("Dedispersed signal")
-plt.show()
-```
+- [x] Gaussian pulse generation.
+- [x] Multi-channel signal generation.
+- [x] Frequency-dependent dispersion following the $1/f^2$ law.
+- [x] Background noise generation.
+- [x] CSV export.
+- [x] Signal visualisation.
+- [x] Dedispersion by shifting and summing frequency channels.
+- [x] Periodic pulse train simulation.
+- [x] DFT computation on the dedispersed profile.
+- [x] Mean subtraction and Hann windowing.
+- [x] Automatic computation of `MAX_DELAY` and `N_UTIL`.
+- [x] Fourier spectrum visualisation.
+- [x] Evaluate the periodic pulse profile for time ahead of mesure, avoiding empty regions at the edge of dynamic spectrum. 
 
-## Project steps
+## 10. Future improvements
 
-- [x] Simulate a noisy Gaussian pulse, single channel
-- [x] Extend to multiple channels with per-channel delay following the dispersion law ($1/f^2$)
-- [x] CSV export and visualization (2D / 3D waterfall)
-- [x] Dedispersion: shift each channel back by its delay then sum, to recover a clean 1D time profile
-- [x] Simulate a periodic pulse train (multiple pulsar rotations)
-- [x] DFT on the dedispersed profile to recover the pulsar's rotation period
-- [x] Remove the intermediate delays file: the delays are recomputed from the DM in `dedispersion.c`
-- [x] Spectrum plotted in log scale and saved in `result/`
-- [x] Truncate the profile to `N - MAX_DELAY` samples (`N_UTIL`) before the DFT, and apply a Hann window
-- [x] Compute `MAX_DELAY` and `N_UTIL` automatically from the physical parameters in `config.h`
+Potential developments include:
 
-## TODO
+- [ ] **Dispersion measure search:** dedisperse the signal over a range of trial DM values and plot the signal-to-noise ratio as a function of DM. The maximum should occur near the true DM.
+- [ ] **Detection significance:** quantify the signal-to-noise ratio of the recovered pulse and the fundamental Fourier peak.
+- [ ] **Fast Fourier Transform:** replace the direct $O(N^2)$ DFT with an $O(N\log N)$ FFT algorithm and compare execution times.
+- [ ] **Real pulsar data:** apply the dedispersion algorithm to public filterbank data from an observed pulsar.
+- [ ] **Weighted mean subtraction:** investigate subtracting the Hann-weighted mean to reduce the residual DC component.
 
-- [ ] **DM scan**: dedisperse for a range of trial DM values, plot the signal-to-noise ratio of the dedispersed profile against DM, and check that the maximum falls at the true DM (56.8 pc/cm³). This is the actual principle of a pulsar search.
-- [ ] **Quantify the detection**: compute the signal-to-noise ratio of the dedispersed pulse and of the DFT peak (peak height compared to the surrounding noise floor).
-- [ ] **FFT**: replace the naive $O(N^2)$ DFT with a radix-2 Cooley-Tukey FFT ($O(N \log N)$) and compare computation times.
-- [ ] **Real data**: apply the dedispersion to a public filterbank file of a real pulsar, to deal with non-Gaussian noise and interference.
-- [ ] *(optional)* **More realistic generation**: evaluate the periodic pulse profile at $t - \Delta t_c$ in each channel, so that every channel is filled over the whole observation (no empty zone at the edges of the dynamic spectrum). The truncation in `dedispersion.c` stays necessary.
-- [ ] *(optional)* **Weighted mean**: subtract the Hann-weighted mean instead of the plain mean to cancel the residual peak at 0 Hz.
+## 11. References
 
-## References
+- [ATNF Pulsar Catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/) — pulsar parameters, including dispersion measures.
+- Crab pulsar (B0531+21) — reference dispersion measure of approximately $56.8\ \mathrm{pc\,cm^{-3}}$.
 
-- [ATNF Pulsar Catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/) — parameters (including DM) of real pulsars
-- Crab pulsar (B0531+21): DM ≈ 56.8 pc/cm³
+---
+
+**Project objective:** simulate the propagation of a pulsar radio signal through the interstellar medium, recover its original pulse profile using dedispersion, and estimate its rotation period through Fourier analysis.

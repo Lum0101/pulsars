@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -9,8 +10,9 @@ int main(void)
     FILE *data_file = NULL;
     FILE *dedispersed_file = NULL;
 
-    float **signal     = calloc(N_CHANNEL, sizeof(float *));
+    float **signal = calloc(N_CHANNEL, sizeof(float *));
     float *dedispersed = calloc(N_UTIL, sizeof(float));
+
     if (!signal || !dedispersed) goto cleanup;
 
     for (int c = 0; c < N_CHANNEL; c++) {
@@ -18,44 +20,59 @@ int main(void)
         if (!signal[c]) goto cleanup;
     }
 
-    char header[100];
-    int channel, i;
-    float amplitude;
-
     // Read the signal
     data_file = fopen("signal.csv", "r");
     if (!data_file) goto cleanup;
 
-    if (!fgets(header, sizeof(header), data_file)) goto cleanup;    // Skip the header
-    while (fscanf(data_file, "%d,%d,%f", &channel, &i, &amplitude) == 3) {
-        if (channel >= 0 && channel < N_CHANNEL && i >= 0 && i < N)
+    char header[100];
+    int channel, i;
+    float amplitude;
+
+    if (!fgets(header, sizeof(header), data_file))
+        goto cleanup;
+
+    while (fscanf(data_file, "%d,%d,%f",
+                  &channel, &i, &amplitude) == 3) {
+
+        if (channel >= 0 && channel < N_CHANNEL &&
+            i >= 0 && i < N) {
             signal[channel][i] = amplitude;
+        }
     }
+
     fclose(data_file);
     data_file = NULL;
 
-
-    // Dedisperse: sum all channels, each shifted by its own delay
-    for (int t = 0; t < N_UTIL; t++) {
+    // Dedisperse
+    for (int t = MIN_UTIL; t < MAX_UTIL; t++) {
         float sum = 0.0f;
+
         for (int c = 0; c < N_CHANNEL; c++) {
-            // CHannel frequency (linear distribution over the span)
-            float f_c = F_MIN + c * (F_MAX - F_MIN) / (N_CHANNEL - 1);
-            // Dispersion delay relative to the reference frequency (decay)
-            float delta_t_c = K_DM * DM * (1.0f / (f_c * f_c) - 1.0f / (F_REF * F_REF));
+            float f_c = F_MIN +
+                c * (F_MAX - F_MIN) / (N_CHANNEL - 1);
+
+            float delta_t_c = K_DM * DM *
+                (1.0f / (f_c * f_c) -
+                 1.0f / (F_REF * F_REF));
+
             int idx = t + (int)(delta_t_c / DT);
-            if (idx >= 0 && idx < N) sum += signal[c][idx];
+
+            if (idx >= 0 && idx < N)
+                sum += signal[c][idx];
         }
-        dedispersed[t] = sum;
+
+        dedispersed[t - MIN_UTIL] = sum;
     }
 
-    // Write the result
+    // Write the dedispersed signal
     dedispersed_file = fopen("dedispersed.csv", "w");
     if (!dedispersed_file) goto cleanup;
 
     fprintf(dedispersed_file, "i,amplitude\n");
-    for (int t = 0; t < N_UTIL; t++) {
-        fprintf(dedispersed_file, "%d,%f\n", t, dedispersed[t]);
+
+    for (int t = MIN_UTIL; t < MAX_UTIL; t++) {
+        fprintf(dedispersed_file, "%d,%f\n",
+                t - MIN_UTIL, dedispersed[t - MIN_UTIL]);
     }
 
     ret = 0;
@@ -63,10 +80,14 @@ int main(void)
 cleanup:
     if (data_file) fclose(data_file);
     if (dedispersed_file) fclose(dedispersed_file);
+
     if (signal) {
-        for (int c = 0; c < N_CHANNEL; c++) free(signal[c]);        // free(NULL) is safe
+        for (int c = 0; c < N_CHANNEL; c++)
+            free(signal[c]);
         free(signal);
     }
+
     free(dedispersed);
+
     return ret;
 }
