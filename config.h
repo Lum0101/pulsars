@@ -25,5 +25,6 @@
 #define PERIOD          0.033f                      // Pulsar period (s)
 #define PERIOD_INDEX    ((int)(PERIOD / DT + 0.5f)) // Period in samples (rounded)
 #define NOISE_AMPLITUDE 0.1f                        // Peak-to-peak amplitude of the background noise
-
+#define MAX_DELAY       ((int)ceilf(K_DM*DM*(1.0f/(F_MIN*F_MIN) - 1.0f/(F_MAX*F_MAX)) / DT))
+#define N_UTIL          (N-MAX_DELAY)
 #endif

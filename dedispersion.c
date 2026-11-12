@@ -10,7 +10,7 @@ int main(void)
     FILE *dedispersed_file = NULL;
 
     float **signal     = calloc(N_CHANNEL, sizeof(float *));
-    float *dedispersed = calloc(N, sizeof(float));
+    float *dedispersed = calloc(N_UTIL, sizeof(float));
     if (!signal || !dedispersed) goto cleanup;
 
     for (int c = 0; c < N_CHANNEL; c++) {
@@ -36,7 +36,7 @@ int main(void)
 
 
     // Dedisperse: sum all channels, each shifted by its own delay
-    for (int t = 0; t < N; t++) {
+    for (int t = 0; t < N_UTIL; t++) {
         float sum = 0.0f;
         for (int c = 0; c < N_CHANNEL; c++) {
             // CHannel frequency (linear distribution over the span)
@@ -54,7 +54,7 @@ int main(void)
     if (!dedispersed_file) goto cleanup;
 
     fprintf(dedispersed_file, "i,amplitude\n");
-    for (int t = 0; t < N; t++) {
+    for (int t = 0; t < N_UTIL; t++) {
         fprintf(dedispersed_file, "%d,%f\n", t, dedispersed[t]);
     }
 

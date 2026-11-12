@@ -18,10 +18,6 @@ int main(void)
         if (!signal[i]) goto cleanup;
     }
 
-    // Delay of the lowest frequency: same for every channel, so computed once
-    const int max_decay_index =
-        (int)(K_DM * DM * (1.0f / (F_MIN * F_MIN) - 1.0f / (F_REF * F_REF)) / DT);
-
     for (int i = 0; i < N_CHANNEL; i++) {
         // Channel frequency (linear distribution over the span)
         float f_c = F_MIN + i * (F_MAX - F_MIN) / (N_CHANNEL - 1);
@@ -31,8 +27,9 @@ int main(void)
         decays[i] = delta_t;
         int decay_index = (int)(delta_t / DT);
 
-        // Gaussian pulses, as long as the most delayed channel still fits in the array
-        for (int p = 0; FIRST_PULSE_POS + max_decay_index + p * PERIOD_INDEX < N; p++) {
+        // Gaussian pulses. Pulses may be "outide of range" for other chanels but for realism sake
+        // they are still added.
+        for (int p = 0; FIRST_PULSE_POS + p * PERIOD_INDEX < N; p++) {
             int pulse_center = FIRST_PULSE_POS + decay_index + p * PERIOD_INDEX;
             for (int c = 0; c < N; c++) {
                 float x = (c - pulse_center) / (float)PULSE_WIDTH;
