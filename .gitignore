@@ -56,3 +56,11 @@ dkms.conf
 
 # Makefile
 Makefile
+
+# Bin files
+generate
+dedispersion
+dft
+
+# Csv files
+*.csv
