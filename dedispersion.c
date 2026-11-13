@@ -13,23 +13,34 @@ int main(void)
     float **signal = calloc(N_CHANNEL, sizeof(float *));
     float *dedispersed = calloc(N_UTIL, sizeof(float));
 
-    if (!signal || !dedispersed) goto cleanup;
+    if (!signal || !dedispersed){
+        fprintf(stderr, "Error: out of memory\n");
+        goto cleanup;
+    }
 
     for (int c = 0; c < N_CHANNEL; c++) {
         signal[c] = calloc(N, sizeof(float));
-        if (!signal[c]) goto cleanup;
+        if (!signal[c]){
+            fprintf(stderr, "Error: out of memory\n");
+            goto cleanup;
+        }
     }
 
     // Read the signal
     data_file = fopen("signal.csv", "r");
-    if (!data_file) goto cleanup;
+    if (!data_file){
+        perror("signal.csv");
+        goto cleanup;
+    }
 
     char header[100];
     int channel, i;
     float amplitude;
 
-    if (!fgets(header, sizeof(header), data_file))
+    if (!fgets(header, sizeof(header), data_file)){
+        fprintf(stderr, "Error: signal.csv is empty\n");
         goto cleanup;
+    }
 
     while (fscanf(data_file, "%d,%d,%f",
                   &channel, &i, &amplitude) == 3) {
@@ -66,7 +77,9 @@ int main(void)
 
     // Write the dedispersed signal
     dedispersed_file = fopen("dedispersed.csv", "w");
-    if (!dedispersed_file) goto cleanup;
+    if (!dedispersed_file){
+        fprintf(stderr, "Error: dedispersed.csv is empty");
+    }
 
     fprintf(dedispersed_file, "i,amplitude\n");
 

@@ -8,6 +8,9 @@ int main(void)
 {
     int ret = 1;
     FILE *f = NULL;
+    
+    // Initialize seed for random at every exec
+    srand(SEED);
 
     float **signal = calloc(N_CHANNEL, sizeof(float *));
     if (!signal) goto cleanup;
@@ -27,7 +30,7 @@ int main(void)
 
         int decay_index = (int)(delta_t / DT);
 
-        // Generate pulses emitted before the observation
+        // To generate pulses emitted before the observation, we start before 0
         int pre_margin = (int)ceilf((MAX_DELAY + FIRST_PULSE_POS) / (float)PERIOD_INDEX);
 
         for (int p = -pre_margin;
@@ -39,8 +42,8 @@ int main(void)
                              + p * PERIOD_INDEX;
 
             for (int c = 0; c < N; c++) {
-                float x = (c - pulse_center) / (float)PULSE_WIDTH;
-                signal[i][c] += expf(-x * x);
+                float x = (c - pulse_center) / PULSE_SIGMA;
+                signal[i][c] += expf(-0.5f * x * x);
             }
         }
 
