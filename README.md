@@ -355,6 +355,7 @@ The project currently implements:
 - [x] Fourier spectrum visualisation.
 - [x] Generation of the pulses emitted before the start of the observation, so that the dynamic spectrum has no empty region at its edges.
 - [x] Error messages on file and memory failures.
+- [x] Subtract the Hann-weighted mean rather than the usual mean to remove the residual DC component. 
 
 ## 10. Future improvements
 
@@ -364,7 +365,6 @@ Potential developments include:
 - [ ] **Detection significance:** quantify the signal-to-noise ratio of the recovered pulse and the fundamental Fourier peak.
 - [ ] **Fast Fourier Transform:** replace the direct $O(N^2)$ DFT with an $O(N\log N)$ FFT algorithm and compare execution times (precompute the Hann window and the twiddle factors in the DFT first, for a fair comparison).
 - [ ] **Real pulsar data:** apply the dedispersion algorithm to public filterbank data from an observed pulsar.
-- [ ] **Weighted mean subtraction:** subtract the Hann-weighted mean to remove the residual DC component.
 
 ## 11. References
 
