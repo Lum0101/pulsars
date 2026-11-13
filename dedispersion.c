@@ -54,20 +54,18 @@ int main(void)
     fclose(data_file);
     data_file = NULL;
 
+    int shift[N_CHANNEL];
+    for (int c = 0; c < N_CHANNEL; c++){
+        float f_c = F_MIN + c * (F_MAX - F_MIN) / (N_CHANNEL - 1);
+        float delta_t_c = K_DM * DM * (1.0f / (f_c * f_c) - 1.0f / (F_REF * F_REF));
+        shift[c] = (int)(delta_t_c / DT);
+    }
+
     // Dedisperse
     for (int t = MIN_UTIL; t < MAX_UTIL; t++) {
         float sum = 0.0f;
-
-        for (int c = 0; c < N_CHANNEL; c++) {
-            float f_c = F_MIN +
-                c * (F_MAX - F_MIN) / (N_CHANNEL - 1);
-
-            float delta_t_c = K_DM * DM *
-                (1.0f / (f_c * f_c) -
-                 1.0f / (F_REF * F_REF));
-
-            int idx = t + (int)(delta_t_c / DT);
-
+        for (int c = 0; c < N_CHANNEL; c++){
+            int idx = t + shift[c];
             if (idx >= 0 && idx < N)
                 sum += signal[c][idx];
         }

@@ -16,7 +16,14 @@ int main(void)
     float *dedispersed = calloc(N_UTIL, sizeof(float));
     float *magnitudes = calloc(NB_K, sizeof(float));
 
-    if (!dedispersed || !magnitudes) goto cleanup;
+    double *x = calloc(N_UTIL, sizeof(double));
+    double *cos_t = calloc(N_UTIL, sizeof(double));
+    double *sin_t = calloc(N_UTIL, sizeof(double));
+
+    if (!dedispersed || !magnitudes || !x || !cos_t || !sin_t){
+        fprintf(stderr, "Eror: out of memory\n");
+        goto cleanup;
+    }
 
     // Read the dedispersed signal
     f = fopen("dedispersed.csv", "r");
@@ -45,22 +52,35 @@ int main(void)
 
     mean /= N_UTIL;
 
+    // Preapare variable so they are not uselessly re-computed
+    if (!x || !cos_t || !sin_t){
+        fprintf(stderr, "Error: out of memory\n");
+        goto cleanup;
+    }
+
+    // Windowed, mean-substracted signal (computed once)
+    for (int n = 0; n < N_UTIL; n++){
+        double w = 0.5 * (1.0 - cos(2.0 * PI * n / (N_UTIL - 1)));
+        x[n] = (dedispersed[n] - mean) * w;
+    }
+
+    // Twidde factors : exp(-2*pi*i*m/N_UTIL) for m = 0 ... N_UTIL -1
+    for (int m = 0; m < N_UTIL; m++){
+        double angle = -2.0 * PI * m / N_UTIL;
+        cos_t[m] = cos(angle);
+        sin_t[m] = sin(angle);
+    }
+
     // Compute the DFT with a Hann window
     for (int k = 0; k < NB_K; k++) {
-        double re = 0.0;
-        double im = 0.0;
+        double re = 0.0, im = 0.0;
+        int m = 0;
 
         for (int n = 0; n < N_UTIL; n++) {
-            float w = 0.5f * (
-                1.0f - cosf(2.0f * PI * n / (N_UTIL - 1))
-            );
-
-            double angle = -2.0 * PI * k * n / N_UTIL;
-
-            double x = (dedispersed[n] - mean) * w;
-
-            re += x * cos(angle);
-            im += x * sin(angle);
+            re += x[n] * cos_t[m];
+            im += x[n] * sin_t[m];
+            m += k;
+            if (m >= N_UTIL) m -= N_UTIL;
         }
 
         magnitudes[k] = (float)sqrt(re * re + im * im);
@@ -86,6 +106,9 @@ cleanup:
 
     free(dedispersed);
     free(magnitudes);
+    free(x);
+    free(cos_t);
+    free(sin_t);
 
     return ret;
 }
