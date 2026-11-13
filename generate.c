@@ -40,8 +40,16 @@ int main(void)
             int pulse_center = FIRST_PULSE_POS
                              + decay_index
                              + p * PERIOD_INDEX;
+            
+            // The Gaussian being non-null (at least almost) for only a few positions, we find these positions and only loop on them.
+            // We use 6 * sigma because for the default project value, the gaussian the equals 1.5e-8 which is far lower than the noise
+            int half = (int)ceilf(6.0f * PULSE_SIGMA);
+            int c_min = pulse_center - half;
+            int c_max = pulse_center + half;
+            if (c_min < 0) c_min = 0;
+            if (c_max > N) c_max = N-1;
 
-            for (int c = 0; c < N; c++) {
+            for (int c = c_min; c < c_max; c++) {
                 float x = (c - pulse_center) / PULSE_SIGMA;
                 signal[i][c] += expf(-0.5f * x * x);
             }
