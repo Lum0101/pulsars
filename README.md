@@ -17,12 +17,12 @@ As the signal travels through the ionised interstellar medium, lower frequencies
 
 The time delay relative to a reference frequency is:
 
-$$ \Delta t(f) = K_{\mathrm{DM}}\,\mathrm{DM} \left(\frac{1}{f^2}-\frac{1}{f_{\mathrm{ref}}^2}\right) $$
+$$ \Delta t(f) = K_{\mathrm{DM}}\ \mathrm{DM} \left(\frac{1}{f^2}-\frac{1}{f_{\mathrm{ref}}^2}\right) $$
 
 where:
 
-- $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\,pc^{-1}\,cm^3\,s}$
-- DM is the dispersion measure, in $\mathrm{pc\,cm^{-3}}$
+- $K_{\mathrm{DM}} = 4148.8\ \mathrm{MHz^2\ pc^{-1}\ cm^3\ s}$
+- DM is the dispersion measure, in $\mathrm{pc\ cm^{-3}}$
 - $f$ and $f_{\mathrm{ref}}$ are frequencies in MHz.
 
 A radio telescope observes the frequency band through several channels. Without correction, the pulse appears progressively delayed at lower frequencies.
@@ -31,7 +31,7 @@ A radio telescope observes the frequency band through several channels. Without 
 
 The maximum delay across the observed frequency band is:
 
-$$ \Delta t_{\max} = K_{\mathrm{DM}}\,\mathrm{DM} \left(\frac{1}{f_{\min}^2}-\frac{1}{f_{\max}^2}\right) $$
+$$ \Delta t_{\max} = K_{\mathrm{DM}}\ \mathrm{DM} \left(\frac{1}{f_{\min}^2}-\frac{1}{f_{\max}^2}\right) $$
 
 For the default parameters, this delay is approximately 59 ms.
 
@@ -88,10 +88,10 @@ All simulation parameters are defined in `config.h`.
 | `F_MIN`           | Lowest observed frequency (MHz)                                                      | 1200              |
 | `F_MAX`           | Highest observed frequency (MHz)                                                     | 1500              |
 | `F_REF`           | Reference frequency (MHz)                                                            | `F_MAX`           |
-| `DM`              | Dispersion measure ($\mathrm{pc\,cm^{-3}}$)                                          | 56.8              |
+| `DM`              | Dispersion measure ($\mathrm{pc\ cm^{-3}}$)                                          | 56.8              |
 | `K_DM`            | Dispersion constant                                                                  | 4148.8            |
 | `FIRST_PULSE_POS` | Reference-channel pulse position (sample index)                                      | 5                 |
-| `PULSE_SIGMA`     | Standard deviation $\sigma$ of the Gaussian pulse (samples); FWHM $\approx 2.355\,\sigma \approx 8.2$ samples | 3.5 |
+| `PULSE_SIGMA`     | Standard deviation $\sigma$ of the Gaussian pulse (samples); FWHM $\approx 2.355\ \sigma \approx 8.2$ samples | 3.5 |
 | `PERIOD`          | Pulsar rotation period (s)                                                           | 0.033             |
 | `PERIOD_INDEX`    | Rotation period in samples                                                           | Computed (33)     |
 | `NOISE_AMPLITUDE` | Peak-to-peak background noise amplitude                                              | 0.1               |
@@ -108,7 +108,7 @@ The default dispersion measure corresponds approximately to that of the Crab pul
 
 $$ s(i) = \exp\left(-\frac{(i - i_0)^2}{2\sigma^2}\right) $$
 
-Its full width at half maximum (FWHM), the width of the pulse measured at half of its peak height, is $2\sqrt{2\ln 2}\,\sigma \approx 2.355\,\sigma$.
+Its full width at half maximum (FWHM), the width of the pulse measured at half of its peak height, is $2\sqrt{2\ln 2}\ \sigma \approx 2.355\ \sigma$.
 
 **Rounding convention.** `MAX_DELAY` is rounded **up**, while each channel's shift in `generate.c` and `dedispersion.c` is **truncated** to an integer. Every shift is therefore at most `MAX_DELAY`, and the read index `t + shift` never exceeds `N - 1`, whatever the values of `DM` or of the band. The cost is at most one unused sample.
 
@@ -128,7 +128,7 @@ $$ T_{\mathrm{util}} = N_{\mathrm{UTIL}} \times DT \approx 4.037\ \mathrm{s} $$
 
 The corresponding DFT frequency resolution is:
 
-$$ \Delta f = \frac{1}{N_{\mathrm{UTIL}}\,DT} \approx 0.248\ \mathrm{Hz} $$
+$$ \Delta f = \frac{1}{N_{\mathrm{UTIL}}\ DT} \approx 0.248\ \mathrm{Hz} $$
 
 ## 4. Compilation
 
@@ -276,7 +276,9 @@ $$ w[n] = \frac{1}{2} \left(1-\cos\left(\frac{2\pi n}{N_{\mathrm{UTIL}}-1}\right
 
 The windowed signal is:
 
-$$ x'[n] = (x[n]-\bar{x})\,w[n] $$
+$$ x'[n] = (x[n]-\overline{x_w})w[n] $$
+
+Where $\overline{x_w}$ is the Hann-weighted average.
 
 This reduces spectral leakage but also broadens the main spectral peak and reduces its amplitude.
 
@@ -367,7 +369,7 @@ Potential developments include:
 ## 11. References
 
 - [ATNF Pulsar Catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/) — pulsar parameters, including dispersion measures.
-- Crab pulsar (B0531+21) — reference dispersion measure of approximately $56.8\ \mathrm{pc\,cm^{-3}}$.
+- Crab pulsar (B0531+21) — reference dispersion measure of approximately $56.8\ \mathrm{pc\ cm^{-3}}$.
 
 ---
 
