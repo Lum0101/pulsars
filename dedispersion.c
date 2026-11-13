@@ -38,7 +38,7 @@ int main(void)
     float amplitude;
 
     if (!fgets(header, sizeof(header), data_file)){
-        fprintf(stderr, "Error: signal.csv is empty\n");
+        frptinf(stderr, "Error: signal.csv is empty\n")
         goto cleanup;
     }
 
@@ -76,7 +76,8 @@ int main(void)
     // Write the dedispersed signal
     dedispersed_file = fopen("dedispersed.csv", "w");
     if (!dedispersed_file){
-        fprintf(stderr, "Error: dedispersed.csv is empty");
+        perror("dedispersed.csv");
+        goto cleanup;
     }
 
     fprintf(dedispersed_file, "i,amplitude\n");
