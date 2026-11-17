@@ -403,14 +403,15 @@ With a higher noise level, the expected highest noise peaks rise to about $2.5\t
 - [x] Hann windowing with Hann-weighted mean subtraction (no residual 0 Hz component).
 - [x] Radix-2 iterative FFT, replacing the direct $O(N^2)$ DFT.
 - [x] Fourier spectrum visualisation and noise-level study (`NOISE_AMPLITUDE` = 70 and 100).
+- [x] Replace the uniform noise by Gaussian noise, closer to real radiometer noise.
+- [x] Plot this signal-to-noise ratio as a function of `NOISE_AMPLITUDE` to find the detection limit. 
 
 ## 10. Future improvements
 
 - [ ] **Dispersion measure search:** dedisperse the signal over a range of trial DM values and plot the signal-to-noise ratio as a function of DM. The maximum should occur near the true DM.
 - [ ] **Detection significance:** compute the signal-to-noise ratio of the fundamental peak from the data (peak height relative to the median or $\sigma_R$ of the surrounding bins) instead of relying on the analytical estimate above.
-- [ ] **Noise scan:** plot this signal-to-noise ratio as a function of `NOISE_AMPLITUDE` to find the detection limit.
+- [ ] **Noise scan:** switch signal-to-noise ratio to a better definition.
 - [ ] **Harmonic summing / folding:** add the power at the harmonics of the candidate frequency, or fold the profile at the detected period, to recover signal lost in the noise.
-- [ ] **Gaussian noise:** replace the uniform noise by Gaussian noise, closer to real radiometer noise.
 - [ ] **Real pulsar data:** apply the dedispersion algorithm to public filterbank data from an observed pulsar.
 
 ## 11. References
