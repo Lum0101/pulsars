@@ -1,4 +1,3 @@
-
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -6,7 +5,7 @@
 
 // Simulation parameters
 #define DT              1e-3f
-#define N               4096
+#define N               4155    // = 4096 + MAX_DELAY (59), so that N_UTIL = 4096 (see the check below)
 #define FIRST_PULSE_POS 5
 #define PULSE_SIGMA 3.5f    // Gaussian standard deviation (samples), FWHM ≈ 2.355 * sigma
 #define N_CHANNEL       64
@@ -38,5 +37,11 @@
 #define MIN_UTIL       0
 #define MAX_UTIL       (N - MAX_DELAY)
 #define N_UTIL         (MAX_UTIL - MIN_UTIL)
+
+// N is kept a plain literal (usable for file-scope array sizes). If DM, the band
+// or DT change, MAX_DELAY changes too: this check then fails at compile time and
+// tells which N to use, so that N_UTIL stays a power of 2.
+_Static_assert(N_UTIL > 0 && (N_UTIL & (N_UTIL - 1)) == 0,
+               "N_UTIL = N - MAX_DELAY must be a power of 2: set N = 2^m + MAX_DELAY");
 
 #endif

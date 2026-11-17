@@ -38,7 +38,7 @@ int main(void)
     float amplitude;
 
     if (!fgets(header, sizeof(header), data_file)){
-        frptinf(stderr, "Error: signal.csv is empty\n")
+        fprintf(stderr, "Error: signal.csv is empty\n");
         goto cleanup;
     }
 
