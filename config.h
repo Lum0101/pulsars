@@ -22,7 +22,8 @@
 #define PERIOD          0.033f
 #define PERIOD_INDEX    ((int)(PERIOD / DT + 0.5f))
 
-#define NOISE_AMPLITUDE 0.1f
+// Can work for NOISE_AMPLITUDE up to 100.0f
+#define NOISE_AMPLITUDE 1.0f
 
 #define DELAY_SPAN_S   (K_DM * DM * (1.0f / \
             (F_MIN * F_MIN) - 1.0f / (F_MAX * F_MAX)))
