@@ -4,17 +4,18 @@
 #include <complex.h>
 #include "config.h"
 
-#define NB_K (N_UTIL / 2 + 1)                                           // Only half the spectrum needs to be computed (real signal)
+#define M    (N_UTIL / 2)                                               // Size of the complex FFT (real signal packed in complex)
+#define NB_K (M + 1)                                                    // Only half the spectrum needs to be computed (real signal)
 
 #ifndef PI
 #define PI 3.14159265358979323846
 #endif
 
-// The radix-2 FFT divides the signal in two halves recursively,
-// so N_UTIL has to be a power of 2. Checked at compile time:
+// Real-input FFT through one complex radix-2 FFT of size N/2:
+// both N and N/2 have to be powers of 2. Checked at compile time:
 // no runtime error path, hence no way to leak memory because of it.
-_Static_assert(N_UTIL >= 2 && (N_UTIL & (N_UTIL - 1)) == 0,
-               "N_UTIL must be a power of 2");
+_Static_assert(N_UTIL >= 4 && (N_UTIL & (N_UTIL - 1)) == 0,
+               "N_UTIL must be a power of 2, >= 4");
 
 int main(void)
 {
@@ -26,8 +27,8 @@ int main(void)
     float *magnitudes  = calloc(NB_K, sizeof(float));                   // Output magnitudes
 
     double *w = calloc(N_UTIL, sizeof(double));                         // Hann weights
-    double complex *x = calloc(N_UTIL, sizeof(double complex));         // Windowed signal, then spectrum (in place)
-    double complex *twiddle = malloc((N_UTIL / 2) * sizeof(*twiddle));  // FFT twiddle factors
+    double complex *x = calloc(M, sizeof(double complex));              // Packed signal (even -> Re, odd -> Im), then spectrum (in place)
+    double complex *twiddle = malloc(M * sizeof(*twiddle));             // FFT twiddle factors W_N^k, k < N/2
 
     // Other variables (declared here so that no goto jumps over a declaration)
     char header[100];
@@ -88,22 +89,25 @@ int main(void)
     }
     hann_mean = data_hann_product / hann_sum;
 
-    // Compute the windowed and Hann-mean-subtracted signal (once and for all)
-    for (int n = 0; n < N_UTIL; n++)
-        x[n] = (dedispersed[n] - hann_mean) * w[n];
+    // Windowed and Hann-mean-subtracted signal, packed directly: z[m] = x[2m] + i*x[2m+1]
+    for (int m = 0; m < M; m++) {
+        double re = (dedispersed[2 * m]     - hann_mean) * w[2 * m];
+        double im = (dedispersed[2 * m + 1] - hann_mean) * w[2 * m + 1];
+        x[m] = re + I * im;
+    }
 
-    // FFT ---------------------------------------------------------------------
+    // FFT (size M = N/2) ------------------------------------------------------
 
     // Twiddle factors: exp(-2*pi*i*k/N), k = 0 ... N/2 - 1
-    for (int k = 0; k < N_UTIL / 2; k++)
+    for (int k = 0; k < M; k++)
         twiddle[k] = cexp(-2.0 * I * PI * (double)k / (double)N_UTIL);
 
     // Bit-reversal
     // Because of the successive divisions in pairs/odds, the samples end up
     // in a different order. The new order is given by reversing the bits
     // of the index.
-    for (int i = 1, j = 0; i < N_UTIL; i++) {
-        int bit = N_UTIL >> 1;
+    for (int i = 1, j = 0; i < M; i++) {
+        int bit = M >> 1;
         for (; j & bit; bit >>= 1)
             j ^= bit;
         j ^= bit;
@@ -114,11 +118,11 @@ int main(void)
         }
     }
 
-    // Butterflies: len = 2, 4, 8, ..., N_UTIL
-    for (int len = 2; len <= N_UTIL; len <<= 1) {
+    // Butterflies: len = 2, 4, 8, ..., M
+    for (int len = 2; len <= M; len <<= 1) {
         int half   = len / 2;
-        int stride = N_UTIL / len;                                      // W_len^k = W_N^(k*stride)
-        for (int i = 0; i < N_UTIL; i += len) {
+        int stride = N_UTIL / len;                                      // W_len^k = W_N^(k*N/len), k*stride < N/2: always inside the table
+        for (int i = 0; i < M; i += len) {
             for (int k = 0; k < half; k++) {
                 double complex u = x[i + k];
                 double complex v = x[i + k + half] * twiddle[k * stride];
@@ -128,9 +132,25 @@ int main(void)
         }
     }
 
-    // Magnitudes (only the first N/2 + 1 bins are meaningful for a real signal)
-    for (int k = 0; k < NB_K; k++)
-        magnitudes[k] = (float)cabs(x[k]);
+    // Unpacking: spectrum of the real signal from Z = FFT_M(z) -----------------
+    // E[k] = (Z[k] + conj(Z[M-k])) / 2        (spectrum of even samples)
+    // O[k] = (Z[k] - conj(Z[M-k])) / (2i)     (spectrum of odd samples)
+    // X[k] = E[k] + W_N^k * O[k]
+    // and X[M-k] = conj(E[k] - W_N^k * O[k]), so |X[k]| and |X[M-k]| come
+    // from the same e and t: only k = 1 ... M/2 has to be visited.
+
+    // k = 0 and k = M: purely real bins
+    magnitudes[0] = (float)fabs(creal(x[0]) + cimag(x[0]));
+    magnitudes[M] = (float)fabs(creal(x[0]) - cimag(x[0]));
+
+    for (int k = 1; k <= M / 2; k++) {
+        double complex zk = x[k];
+        double complex zc = conj(x[M - k]);
+        double complex e  = 0.5 * (zk + zc);
+        double complex t  = twiddle[k] * (-0.5 * I * (zk - zc));        // W_N^k * O[k], with 1/(2i) = -i/2
+        magnitudes[k]     = (float)cabs(e + t);
+        magnitudes[M - k] = (float)cabs(e - t);
+    }
 
     // ------------------------------------------------------------------------
 
