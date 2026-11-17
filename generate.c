@@ -3,6 +3,8 @@
 #include <math.h>
 #include "config.h"
 
+#define PI 3.14159265358979323846
+
 int main(void)
 {
     int ret = 1;
@@ -54,10 +56,12 @@ int main(void)
             }
         }
 
-        // Add uniform noise in [-0.05, 0.05]
-        for (int c = 0; c < N; c++) {
-            signal[i][c] += NOISE_AMPLITUDE *
-                ((float)rand() / RAND_MAX - 0.5f);
+        for (int c = 0; c < N; c++){ 
+            // Add a gaussian noise
+            double u1 = (rand() + 1.0) / (RAND_MAX + 2.0);
+            double u2 = (rand() + 1.0) / (RAND_MAX + 2.0);
+            double gauss_noise = sqrt(-2.0 * log(u1)) * cos(2.0 * PI * u2);
+            signal[i][c] += NOISE_AMPLITUDE * gauss_noise;
         }
     }
 

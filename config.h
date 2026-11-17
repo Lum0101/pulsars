@@ -1,6 +1,3 @@
-#ifndef CONFIG_H
-#define CONFIG_H
-
 #include <math.h>
 
 // Simulation parameters
@@ -22,8 +19,9 @@
 #define PERIOD          0.033f
 #define PERIOD_INDEX    ((int)(PERIOD / DT + 0.5f))
 
-// Can work for NOISE_AMPLITUDE up to 100.0f
+#ifndef NOISE_AMPLITUDE
 #define NOISE_AMPLITUDE 1.0f
+#endif
 
 #define DELAY_SPAN_S   (K_DM * DM * (1.0f / \
             (F_MIN * F_MIN) - 1.0f / (F_MAX * F_MAX)))
@@ -44,5 +42,3 @@
 // tells which N to use, so that N_UTIL stays a power of 2.
 _Static_assert(N_UTIL > 0 && (N_UTIL & (N_UTIL - 1)) == 0,
                "N_UTIL = N - MAX_DELAY must be a power of 2: set N = 2^m + MAX_DELAY");
-
-#endif
