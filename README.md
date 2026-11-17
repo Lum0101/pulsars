@@ -45,7 +45,7 @@ For the default parameters, this delay is approximately 59 ms.
 Each pulse is a Gaussian of standard deviation $\sigma$ (`PULSE_SIGMA`, in samples), emitted every `PERIOD_INDEX` samples:
 
 $$
-s(t) = \exp\!\left(-\frac{1}{2}\left(\frac{t-t_0}{\sigma}\right)^{2}\right)
+s(t) = \exp\left(-\frac{1}{2}\left(\frac{t-t_0}{\sigma}\right)^{2}\right)
 $$
 
 For speed, each pulse is only evaluated within $\pm 6\sigma$ of its centre, where the Gaussian is already negligible compared to the noise.
