@@ -61,6 +61,7 @@ Makefile
 generate
 dedispersion
 dft
+search
 
 # Csv files
 *.csv
